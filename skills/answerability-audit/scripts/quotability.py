@@ -19,6 +19,16 @@ WS = re.compile(r"\s+")
 MAIN = re.compile(r"<(main|article)\b[^>]*>(.*?)</\1>", re.I | re.S)
 SENT = re.compile(r"(?<=[.!?])\s+(?=[A-Z0-9])")
 
+# NUMERIC/DEFINITIONAL/CAPABILITY/CLAIM are all English-keyword patterns ("is a/an/the",
+# "lets you", "we propose"). Confirmed live on a Spanish-language site: a glossary page
+# -- 863 words whose entire purpose is defining terms -- scored zero on every kind,
+# because Spanish uses "es un/una" and "te permite", not "is a" and "lets you". That is
+# a classifier-coverage gap, not evidence the page is thin, and SKILL.md needs the
+# page's declared language to tell the two apart. <html lang="..."> is a simple,
+# near-universal signal for this -- reported here, not judged; SKILL.md decides what a
+# non-English declaration means for this check's numeric threshold.
+HTML_LANG = re.compile(r'<html\b[^>]*\blang\s*=\s*["\']([a-zA-Z-]+)["\']', re.I)
+
 # A quotable sentence carries something an assistant can repeat as an answer. Numbers are
 # the clearest case but not the only one: "X is a payroll platform for UK companies" has
 # no digit and is highly quotable, while "we reimagine what's possible" has none of it.
@@ -142,8 +152,12 @@ def main():
                 1 for s in sentences
                 if a.entity.lower() in s.lower() and CONCRETE.search(s))
 
+        lang_match = HTML_LANG.search(html)
+        declared_language = lang_match.group(1).lower() if lang_match else None
+
         res["pages"].append({
             "url": url,
+            "declared_language": declared_language,
             "word_count": len(words),
             "sentence_count": len(sentences),
             "quotable_count": len(quotable),

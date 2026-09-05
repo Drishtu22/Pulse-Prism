@@ -144,14 +144,25 @@ def main():
     # orchestrator's numbering.
     by_title = {f.get("title", ""): f for f in findings}
 
-    # A site-wide reachability failure blocks everything downstream by construction,
-    # whether or not a skill thought to declare it. Downstream skills inspected pages the
-    # crawler cannot actually reach, so their findings are provisional until it clears.
+    # A genuinely site-wide reachability failure blocks everything downstream by
+    # construction, whether or not a skill thought to declare it. But "widespread"
+    # (0.40-0.79 of pages) is too weak a signal for that -- confirmed live on a real
+    # site carrying two independent stage-1/stage-2 findings with disjoint scopes: a
+    # robots.txt block naming one specific retrieval agent on specific paths (prevalence
+    # "widespread", genuinely affecting only that one agent) does not make a completely
+    # unrelated, universal delivery failure -- one that would still block every *other*
+    # agent even after the robots.txt issue is fixed -- "moot until it clears". Treating
+    # the narrower finding as a blanket blocker capped the universal one at medium and
+    # marked it blocked_by a finding whose fix would do nothing to resolve it. Only a
+    # finding whose own prevalence is "site-wide" (>= 0.80, not merely "widespread") is
+    # trusted to plausibly subsume everything else; a narrower stage-1 finding may still
+    # legitimately block specific other findings via an explicit blocked_by reference,
+    # just not everything automatically.
     auto_blockers = [
         f for f in findings
         if f.get("severity_inputs", {}).get("stage") == 1
         and f["severity"] == "critical"
-        and f.get("severity_inputs", {}).get("prevalence") in ("site-wide", "widespread")
+        and f.get("severity_inputs", {}).get("prevalence") == "site-wide"
     ]
 
     for f in findings:

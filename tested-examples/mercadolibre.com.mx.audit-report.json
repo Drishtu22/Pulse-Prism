@@ -1,0 +1,130 @@
+{
+  "site": "mercadolibre.com.mx",
+  "audited_at": "2026-09-05T17:00:22Z",
+  "audit_scope": {
+    "pages_sampled": 15,
+    "sample_seed": 42,
+    "sampled_urls": [
+      "https://www.mercadolibre.com.mx",
+      "https://www.mercadolibre.com.mx/glossary/U/1",
+      "https://www.mercadolibre.com.mx/ayuda",
+      "https://www.mercadolibre.com.mx/l/afiliados",
+      "https://www.mercadolibre.com.mx/shorts/clips",
+      "https://www.mercadolibre.com.mx/ayuda/Compras_638",
+      "https://www.mercadolibre.com.mx/syi/core/list",
+      "https://www.mercadolibre.com.mx/accesibilidad/feedback",
+      "https://www.mercadolibre.com.mx/e/negocios",
+      "https://www.mercadolibre.com.mx/l/promociones-sitemerch",
+      "https://www.mercadolibre.com.mx/ayuda/Seguridad_663",
+      "https://www.mercadolibre.com.mx/ayuda/terminos-y-condiciones-uso-del-sitio_2090",
+      "https://www.mercadolibre.com.mx/addresses/v3/navigation/hub?go=https%3A%2F%2Fwww.mercadolibre.com.mx%2F",
+      "https://www.mercadolibre.com.mx/ayuda/Vendiendo_643",
+      "https://www.mercadolibre.com.mx/glossary/K/1"
+    ],
+    "robots_respected": true
+  },
+  "summary": {
+    "total_findings": 2,
+    "critical": 2,
+    "high": 0,
+    "medium": 0,
+    "low": 0,
+    "stage_scores": {
+      "reachability": 28,
+      "delivery": 100,
+      "textuality": 100,
+      "extractability": 100,
+      "trust": 100,
+      "engagement": 100
+    },
+    "headline": "robots.txt disallows every major AI agent's direct-fetch and training crawlers with no stated rationale, while the newer '-SearchBot' variants of the same companies are not named at all and fall through to the permissive default \u2014 critical severity, Confirm whether blocking every named retrieval agent's direct-fetch/user-request crawler is a deliberate anti-scraping decision; if so, extend it consistently to the newer '-SearchBot' agent names too, and consider stating the rationale in the file the way other large sites do."
+  },
+  "findings": [
+    {
+      "title": "robots.txt disallows every major AI agent's direct-fetch and training crawlers with no stated rationale, while the newer '-SearchBot' variants of the same companies are not named at all and fall through to the permissive default",
+      "stage": "reachability",
+      "detected_by": "crawl-access-audit",
+      "evidence": "robots.txt names GPTBot, ChatGPT-User, ClaudeBot, Claude-User, PerplexityBot, Perplexity-User, and Amazonbot in a single group with 'Disallow: /' and no explanatory comment anywhere in the file (unlike sites in this audit's other reports that state an explicit rationale). OAI-SearchBot and Claude-SearchBot -- the newer, search-indexing-specific agents from the same two companies whose other agents are blocked -- are not named in any group and fall through to the permissive 'User-agent: *' block, which carries no blanket disallow. Verified directly: OAI-SearchBot and Claude-SearchBot resolve 'allowed' on a product path while GPTBot, ChatGPT-User, ClaudeBot, Claude-User, PerplexityBot and Perplexity-User all resolve 'disallowed' on the same path. This is the same pattern this audit has flagged on other sites as evidence of an incomplete, boilerplate agent list rather than a considered policy -- here it blocks not just training agents (a defensible choice on its own) but every live-request/user-initiated retrieval agent by name (ChatGPT-User, Claude-User, Perplexity-User), while missing the newest agent names.",
+      "severity_inputs": {
+        "stage": 1,
+        "prevalence": "site-wide",
+        "affected_fraction": 1.0,
+        "criticality": "core"
+      },
+      "reproduction": {
+        "urls": [
+          "https://www.mercadolibre.com.mx/robots.txt"
+        ],
+        "command": "curl -s -A 'Mozilla/5.0' https://www.mercadolibre.com.mx/robots.txt | grep -B7 'Disallow: /$'",
+        "observed": "A single group naming GPTBot, ChatGPT-User, ClaudeBot, Claude-User, PerplexityBot, Perplexity-User, Amazonbot with Disallow: / and no comment; OAI-SearchBot and Claude-SearchBot absent from the file entirely",
+        "expected": "Either a stated rationale for blocking live-request retrieval agents specifically, or the newer SearchBot-style agents treated consistently with the ones already named"
+      },
+      "confidence": "medium",
+      "suggested_action": {
+        "summary": "Confirm whether blocking every named retrieval agent's direct-fetch/user-request crawler is a deliberate anti-scraping decision; if so, extend it consistently to the newer '-SearchBot' agent names too, and consider stating the rationale in the file the way other large sites do.",
+        "priority": "high",
+        "mechanism": "As written, an assistant fetching a specific product page on a user's behalf (ChatGPT-User, Claude-User, Perplexity-User) is blocked by name, while the same companies' separate search-indexing crawlers are not -- an inconsistency that suggests the list was assembled once and not revisited as agent names changed, rather than a considered current policy.",
+        "steps": [
+          "Decide whether blocking live user-request retrieval agents specifically (as opposed to training-only agents) is the intended policy.",
+          "If it is not, remove ChatGPT-User, Claude-User and Perplexity-User from the blocked group.",
+          "If it is, add OAI-SearchBot and Claude-SearchBot to the same group for consistency."
+        ],
+        "verification": "The treatment of a company's live-request agent and its search-indexing agent match for every operator named in the file.",
+        "effort": "trivial",
+        "owner": "engineering"
+      },
+      "severity_score": 1.0,
+      "severity": "critical",
+      "id": "F-001"
+    },
+    {
+      "title": "Search and category-browsing entry points redirect to a bot-verification wall for automated-looking traffic, while the homepage and static content pages remain open",
+      "stage": "reachability",
+      "detected_by": "crawl-access-audit",
+      "evidence": "A plain request to a search results URL (listado.mercadolibre.com.mx/<term>) returns HTTP 302 to /gz/account-verification -- a verification wall, not the search results. The same pattern occurred on a category subdomain (autos.mercadolibre.com.mx). By contrast, the homepage and all 14 sampled static/help/glossary pages returned clean HTTP 200 responses with real content, both to a plain request and (separately, for the homepage) to a full headless-browser render. Since search and category browsing are the primary way a visitor -- or an assistant trying to find a specific product -- would ever reach an individual listing, and the homepage itself does not link to individual product pages in its own markup, this leaves no read-only, guardrail-respecting path from any of this audit's sampled entry points to the site's core content (individual product listings). This audit could not reach a single product page as a result; see not_assessed for what that leaves unverified.",
+      "severity_inputs": {
+        "stage": 1,
+        "prevalence": "widespread",
+        "affected_fraction": 0.6,
+        "criticality": "core"
+      },
+      "reproduction": {
+        "urls": [
+          "https://listado.mercadolibre.com.mx/telefono"
+        ],
+        "command": "curl -s -o /dev/null -w '%{http_code} %{redirect_url}' -A 'Mozilla/5.0' https://listado.mercadolibre.com.mx/telefono",
+        "observed": "302, redirecting to https://www.mercadolibre.com.mx/gz/account-verification?go=...",
+        "expected": "200 with real search results, matching the behavior of the homepage and static pages"
+      },
+      "confidence": "medium",
+      "suggested_action": {
+        "summary": "Verify whether search and category-browsing pages are intended to be fully gated for all non-session traffic, or whether the verification threshold is unintentionally broader than intended for the site's primary content-discovery paths.",
+        "priority": "high",
+        "mechanism": "If reaching any individual listing requires passing this wall first, no retrieval agent -- however well-behaved -- can answer a question about a specific product without a prior authenticated or verified session, which is a much stronger restriction than the robots.txt-level agent blocks alone would suggest.",
+        "steps": [
+          "Confirm the verification wall's trigger conditions for search and category paths specifically.",
+          "If unintentional, scope the wall more narrowly (e.g. to genuinely high-volume automated query patterns) so a single, well-paced request reaches real results."
+        ],
+        "verification": "A single, isolated, well-paced request to a search or category URL returns real results rather than a verification redirect.",
+        "effort": "substantial",
+        "owner": "engineering"
+      },
+      "severity_score": 0.8,
+      "severity": "critical",
+      "id": "F-002"
+    }
+  ],
+  "opportunities": [],
+  "not_assessed": [
+    {
+      "check": "Structured data (AggregateRating/Review/Product/Offer), answerability, freshness, and engagement on individual product pages",
+      "reason": "No individual product page was reachable from any of this audit's entry points within its read-only, guardrail-respecting constraints: the homepage does not link to individual listings in its own markup, and both search and category browsing redirect to a bot-verification wall (see the crawl-access findings). No workaround or verification-bypass was attempted, consistent with this audit's guardrails.",
+      "impact": "This audit cannot say whether MercadoLibre's product pages carry good Product/Offer/AggregateRating markup, quotable descriptions, or a good on-site experience -- only that no path tried could reach one to check. This was the specific mechanism this audit run set out to test (review/rating schema at e-commerce scale) and it could not be completed for this site."
+    },
+    {
+      "check": "Off-site corroboration and entity ambiguity (freshness-corroboration-audit, checks 4-5)",
+      "reason": "Not performed in this run to stay within the demonstration's time budget.",
+      "impact": "Not a meaningful concern for an entity as well-known as MercadoLibre across Latin America, but genuinely not checked."
+    }
+  ]
+}

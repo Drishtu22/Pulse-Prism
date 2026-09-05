@@ -44,12 +44,25 @@ INTERSTITIAL_MARKERS = [
     "access denied", "request blocked", "are you a robot",
     "verifying you are human", "ddos-guard", "sucuri_cloudproxy",
     "please enable javascript to continue", "browser check",
+    # Confirmed live (wsj.com, DataDome): "Please enable JS and disable any ad
+    # blocker" -- close in spirit to the existing javascript-themed markers above but
+    # different enough in exact wording that none of them matched, on a page that was
+    # otherwise unambiguously a bot challenge (see CHALLENGE_ASSET_PATTERNS below,
+    # which is what actually caught it).
+    "enable js and disable",
 ]
 
 # Challenge systems that answer with HTTP 200 and a JavaScript shell rather than an error
 # status. These are the most damaging case for AI discoverability and the hardest to
 # notice: the site owner sees 200s in their logs and assumes all is well, while every
 # non-executing fetcher receives a few kilobytes of nothing.
+#
+# Not every challenge is disguised as a 200, though -- confirmed live on wsj.com, whose
+# DataDome challenge is served as an honest 401. That status is not the sneaky case this
+# list exists to catch, but the underlying evidence (a captcha-delivery.com asset
+# reference) is still the single most specific, useful fact this script can report about
+# *why* a fetch failed, and it is checked below regardless of status code -- unlike the
+# thin-body signal further down, which is deliberately scoped to 200 specifically.
 CHALLENGE_ASSET_PATTERNS = [
     r"/_fs-ch-",            # Fastly bot challenge
     r"/cdn-cgi/challenge",  # Cloudflare
@@ -58,6 +71,7 @@ CHALLENGE_ASSET_PATTERNS = [
     r"/_sec/cp_challenge",  # Imperva
     r"__cf_chl_",
     r"/px/",                # PerimeterX
+    r"captcha-delivery\.com",  # DataDome
 ]
 
 # A body under this size that consists mostly of script and style, with no substantive

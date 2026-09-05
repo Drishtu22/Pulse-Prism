@@ -52,7 +52,7 @@ const fs = require('fs');
 const jobs = JSON.parse(fs.readFileSync(urlsPath, 'utf8'));
 
 const NAV_TIMEOUT = 8000;
-const GRACE_MS = 900;
+const GRACE_MS = 2000;
 
 function installVitals() {
   window.__vitals = { lcp: 0, cls: 0, longTaskTotal: 0 };
@@ -160,18 +160,41 @@ async function addInit(page, fn) {
 async function oneRun(browser, url, wantOcclusion) {
   return withPage(browser, async (page) => {
     await addInit(page, installVitals);
+    let navFailed = null;
     try {
       await page.goto(url, { waitUntil: 'load', timeout: NAV_TIMEOUT });
-    } catch (e) {}
+    } catch (e) {
+      // A failed/timed-out navigation must not fall through to measuring the page
+      // anyway. Confirmed live: a UTM-tagged ad-landing URL hung past an 8s navigation
+      // timeout (a slow ad-conversion pixel, not this site's real content), and the
+      // occlusion/timing measurements taken against that stuck, half-loaded state
+      // reported a nonsensical 100% viewport occlusion -- indistinguishable, to a
+      // reader of the report, from a genuine full-screen blocking overlay. Recording
+      // the failure and skipping measurement entirely is the only honest option; a
+      // number computed against a page that never finished loading is not a
+      // measurement of that page.
+      navFailed = String((e && e.message) || e);
+    }
+    if (navFailed) {
+      return { timing: null, viewport: null, nav_error: navFailed };
+    }
     await new Promise((r) => setTimeout(r, GRACE_MS));
     const vitals = await page.evaluate(() => window.__vitals || { lcp: 0, cls: 0, longTaskTotal: 0 });
     const timing = {
-      lcp_ms: Math.round(vitals.lcp || 0),
+      // A real largest-contentful-paint entry is never exactly 0ms -- some navigation
+      // and processing time always elapses before anything paints. An observed 0 means
+      // the callback simply had not fired yet when we read it, which happens on
+      // genuinely slow, heavy pages (confirmed live: a video-heavy page read 0ms at this
+      // grace period but had a real ~6000ms LCP once given more time). Reporting that as
+      // "0ms" reads as excellent when the truth is the opposite -- worse than reporting
+      // nothing at all. Recording null instead means "not captured," not "measured
+      // fast," and the caller must not silently coerce it into 0.
+      lcp_ms: vitals.lcp > 0 ? Math.round(vitals.lcp) : null,
       cls: Math.round((vitals.cls || 0) * 1000) / 1000,
       tbt_ms: Math.round(vitals.longTaskTotal || 0),
     };
     const viewport = wantOcclusion ? await page.evaluate(measureOcclusion) : null;
-    return { timing, viewport };
+    return { timing, viewport, nav_error: null };
   });
 }
 
@@ -187,7 +210,7 @@ async function main() {
 
   const results = [];
   for (const job of jobs) {
-    const entry = { url: job.url, timing_samples: [], viewport: null, error: null };
+    const entry = { url: job.url, timing_samples: [], viewport: null, error: null, nav_errors: [] };
     try {
       // Occlusion is measured on the *first* run, not the last. A consent or
       // paywall overlay commonly stops reappearing after the first one or two
@@ -198,7 +221,14 @@ async function main() {
       // exactly the obstruction it exists to catch.
       const runs = job.full_timing ? 3 : 1;
       for (let i = 0; i < runs; i++) {
-        const { timing, viewport } = await oneRun(browser, job.url, i === 0);
+        const { timing, viewport, nav_error } = await oneRun(browser, job.url, i === 0);
+        if (nav_error) {
+          // A failed navigation contributes no sample at all -- not a zero, not a
+          // guess -- rather than polluting the median with a measurement of a page
+          // that never actually loaded.
+          entry.nav_errors.push(nav_error);
+          continue;
+        }
         entry.timing_samples.push(timing);
         if (viewport) entry.viewport = viewport;
       }
@@ -350,19 +380,39 @@ def main():
 
         bm = browser_by_url.get(url)
         if bm:
+            if bm.get("nav_errors"):
+                page["nav_errors"] = bm["nav_errors"]
             if bm.get("error"):
                 page["viewport_timing_error"] = bm["error"]
+            elif not (bm.get("timing_samples") or []):
+                # Every run's navigation failed (confirmed live: an ad-campaign
+                # UTM-tagged URL hung past the navigation timeout on every attempt).
+                # No sample exists to summarise -- this belongs in not_assessed, not
+                # in a report field defaulting to a number that looks like a
+                # measurement.
+                page["viewport_timing_error"] = (
+                    "All navigation attempts failed or timed out: "
+                    + "; ".join(bm.get("nav_errors") or ["unknown"]))
             else:
                 samples = bm.get("timing_samples") or []
                 page["timing_run_count"] = len(samples)
                 if len(samples) < 3:
                     page["timing_note"] = (
                         "single-run timing (page beyond the "
-                        f"{MAX_FULL_TIMING_PAGES}-page full-profiling cap); treat as "
-                        "lower-confidence than a median-of-three figure."
+                        f"{MAX_FULL_TIMING_PAGES}-page full-profiling cap, or one or "
+                        "more runs failed to navigate); treat as lower-confidence "
+                        "than a median-of-three figure."
                     )
-                page["lcp_ms_samples"] = [s["lcp_ms"] for s in samples]
-                page["lcp_ms_median"] = median([s["lcp_ms"] for s in samples])
+                lcp_values = [s["lcp_ms"] for s in samples]
+                lcp_captured = [v for v in lcp_values if v is not None]
+                page["lcp_ms_samples"] = lcp_values
+                page["lcp_ms_median"] = median(lcp_captured) if lcp_captured else None
+                if len(lcp_captured) < len(lcp_values):
+                    page["lcp_not_captured_note"] = (
+                        f"{len(lcp_values) - len(lcp_captured)} of {len(lcp_values)} "
+                        "run(s) had no largest-contentful-paint entry within the grace "
+                        "period -- treat as not measured, not as a fast paint."
+                    )
                 page["cls_samples"] = [s["cls"] for s in samples]
                 page["cls_median"] = median([s["cls"] for s in samples])
                 page["tbt_ms_samples"] = [s["tbt_ms"] for s in samples]

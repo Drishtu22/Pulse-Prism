@@ -134,11 +134,29 @@ Report the measured value and the spread, never a grade alone.
 site's users, or the spread across runs is wide enough that the median is unreliable — in
 that case record `not_assessed` with the observed variance.
 
+A page's `lcp_ms_samples` may contain `null` entries — `lcp_ms_median` is `null` too when
+every run did — meaning the largest-contentful-paint callback had not fired by the end of
+the grace period, not that paint was instant. Confirmed live on a genuinely heavy page: a
+real ~6 s LCP read back as an uncaptured `null` before this distinction existed, which
+would have been misread as an excellent score rather than the real defect it was. Never
+treat `null` as `0`. A page with `lcp_not_captured_note` present belongs in `not_assessed`
+for this check, not in a finding claiming fast performance — and a page that is *slow
+enough to still be painting when the grace period ends* is itself suggestive of a real
+performance problem worth investigating directly, even without a numeric median.
+
 **Severity inputs.** stage 6 · prevalence · criticality by page role.
 
 **Degradation.** Where no timing instrumentation is available, record transfer size and
 blocking-resource counts as supporting observations at low confidence, and put the
 performance checks in `not_assessed`. Do not infer a slow page from a large page.
+
+A page carrying `viewport_timing_error` or a non-empty `nav_errors` had a navigation
+that failed or timed out during measurement — confirmed live on a UTM-tagged ad-campaign
+URL whose navigation hung past the timeout (a slow third-party ad-tracking pixel, not a
+defect in the page itself) on every attempt. No occlusion, LCP, CLS or TBT figure exists
+for that page; treat it as `not_assessed`, never as "the page loaded instantly with
+nothing blocking it." A number computed against a navigation that never completed is not
+a measurement of the page — it is noise that happens to look like one.
 
 ### Check 5 — Next-step clarity and friction
 

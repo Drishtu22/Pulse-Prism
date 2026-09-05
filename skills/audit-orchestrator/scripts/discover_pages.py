@@ -13,6 +13,7 @@ Usage:
 """
 
 import argparse
+import gzip
 import html
 import json
 import random
@@ -43,11 +44,24 @@ def fetch(url):
     req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "*/*"})
     try:
         with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
-            return r.read(2_000_000).decode("utf-8", errors="replace"), r.status
+            raw, status = r.read(2_000_000), r.status
     except urllib.error.HTTPError as e:
         return "", e.code
     except Exception:
         return "", None
+    # A sitemap named *.xml.gz (a standard, common practice for large sites -- confirmed
+    # live on airbnb.com's master sitemap index) is genuine gzip-compressed bytes, not
+    # plain XML with an unusual name. urllib never auto-decompresses the way the
+    # `requests` library does, so decoding the raw bytes as UTF-8 without checking first
+    # silently produces garbage and 0 discovered URLs, with no error to signal it.
+    # Detecting by magic number rather than the ".gz" suffix also catches a server that
+    # serves gzip content without naming the file that way.
+    if raw[:2] == b"\x1f\x8b":
+        try:
+            raw = gzip.decompress(raw)
+        except OSError:
+            pass  # truncated or corrupt; fall through and decode whatever bytes exist
+    return raw.decode("utf-8", errors="replace"), status
 
 
 def robots_sitemaps(origin):

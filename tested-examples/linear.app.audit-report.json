@@ -1,0 +1,144 @@
+{
+  "site": "linear.app",
+  "audited_at": "2026-09-05T15:39:16Z",
+  "audit_scope": {
+    "pages_sampled": 15,
+    "sample_seed": 42,
+    "sampled_urls": [
+      "https://linear.app",
+      "https://linear.app/integrations/currents",
+      "https://linear.app/changelog/2019-06-20-international-keyboard-shortcut-improvements",
+      "https://linear.app/docs/label-views",
+      "https://linear.app/blog/designing-remote-work-at-linear",
+      "https://linear.app/customers/craft",
+      "https://linear.app/now/author/charlie-aufmann",
+      "https://linear.app/careers/d062065e-05bb-42ce-a430-ec205695cc2e",
+      "https://linear.app/developers/agent-signals",
+      "https://linear.app/enablement/guide/building-dashboards",
+      "https://linear.app/enablement/guides/routing",
+      "https://linear.app/method/prioritize-enablers-and-blockers",
+      "https://linear.app/quality/00",
+      "https://linear.app/about",
+      "https://linear.app/agents"
+    ],
+    "robots_respected": true
+  },
+  "summary": {
+    "total_findings": 2,
+    "critical": 0,
+    "high": 1,
+    "medium": 0,
+    "low": 1,
+    "stage_scores": {
+      "reachability": 100,
+      "delivery": 100,
+      "textuality": 100,
+      "extractability": 78,
+      "trust": 91,
+      "engagement": 100
+    },
+    "headline": "No schema.org markup anywhere -- Open Graph and Twitter Card are excellent site-wide, but nothing exists in the deeper vocabulary \u2014 high severity, Add an Organization JSON-LD node (name, url, logo, sameAs) site-wide, JobPosting markup on individual career listings, and Article markup (headline, datePublished, author) on blog and changelog entries -- alongside the existing Open Graph tags, not instead of them."
+  },
+  "findings": [
+    {
+      "title": "No schema.org markup anywhere -- Open Graph and Twitter Card are excellent site-wide, but nothing exists in the deeper vocabulary",
+      "stage": "extractability",
+      "detected_by": "structured-data-audit",
+      "evidence": "0 of 15 sampled pages contain JSON-LD, microdata, or RDFa in any form, including /about (organization identity), /careers/* (job listing), and /blog/* and /changelog/* (editorial/dated content) -- all pages whose detected patterns license Organization, JobPosting or Article markup respectively. This is not a general machine-readability gap: every one of the same 15 pages carries complete, well-formed Open Graph (title, description, image) and Twitter Card (card, site, title, description, creator, image) tags. The site has clearly invested in the lower-depth preview channel and not at all in the deeper, more structured one -- Open Graph carries a title/description/image triple but no address, no job-posting fields, no article author or date, none of which OG's vocabulary supports.",
+      "severity_inputs": {
+        "stage": 4,
+        "prevalence": "site-wide",
+        "affected_fraction": 1.0,
+        "criticality": "core"
+      },
+      "reproduction": {
+        "urls": [
+          "https://linear.app/about",
+          "https://linear.app/careers/d062065e-05bb-42ce-a430-ec205695cc2e"
+        ],
+        "command": "curl -s https://linear.app/about | grep -c 'application/ld+json'",
+        "observed": "0",
+        "expected": ">= 1, containing an Organization node with sameAs, and a JobPosting node on the careers page"
+      },
+      "confidence": "high",
+      "suggested_action": {
+        "summary": "Add an Organization JSON-LD node (name, url, logo, sameAs) site-wide, JobPosting markup on individual career listings, and Article markup (headline, datePublished, author) on blog and changelog entries -- alongside the existing Open Graph tags, not instead of them.",
+        "priority": "high",
+        "mechanism": "Open Graph and schema.org solve different problems: OG tells a link-preview generator what thumbnail and one-line description to show; schema.org tells a system extracting structured facts what an Organization's identity anchors are, what a job posting's requirements and location are, or when an article was published. The site already has every value these blocks need -- the same title, description and image already populate the OG tags -- so this is markup generation from existing data, not new content work.",
+        "steps": [
+          "Add a single Organization JSON-LD block (name, url, logo, sameAs to the X/LinkedIn profiles already linked in the page footer) to the shared template.",
+          "Add JobPosting JSON-LD to the careers listing template, sourced from the same data already rendered on the page.",
+          "Add Article JSON-LD (headline, datePublished, author) to blog and changelog templates."
+        ],
+        "verification": "curl -s https://linear.app/about | grep -c 'application/ld+json' returns >= 1.",
+        "effort": "moderate",
+        "owner": "engineering"
+      },
+      "severity_score": 0.55,
+      "severity": "high",
+      "id": "F-001"
+    },
+    {
+      "title": "Dated content uses the <time> element inconsistently -- present but missing its datetime attribute on the blog, absent entirely on the changelog",
+      "stage": "trust",
+      "detected_by": "freshness-corroboration-audit",
+      "evidence": "The blog post at /blog/designing-remote-work-at-linear renders its publish date inside a <time> element twice ('October 29, 2025'), but neither instance carries a datetime attribute -- the semantically-correct tag is used as a plain styling wrapper rather than as machine-readable markup; a parser looking specifically for <time datetime=\"...\"> (a common, standard extraction pattern) gets nothing. The changelog entry at /changelog/2019-06-20-international-keyboard-shortcut-improvements carries no <time> element at all, despite the entry's own URL encoding its date. A cross-reference link to that same entry elsewhere on the page displays it as 'June 21, 2019' -- one day off from the URL's '2019-06-20' -- a minor but real internal inconsistency in how the same date is stored versus displayed.",
+      "severity_inputs": {
+        "stage": 5,
+        "prevalence": "widespread",
+        "affected_fraction": 0.5,
+        "criticality": "supporting"
+      },
+      "reproduction": {
+        "urls": [
+          "https://linear.app/blog/designing-remote-work-at-linear",
+          "https://linear.app/changelog/2019-06-20-international-keyboard-shortcut-improvements"
+        ],
+        "command": "curl -s https://linear.app/blog/designing-remote-work-at-linear | grep -o '<time[^>]*>' | head -3",
+        "observed": "<time> tags with no datetime attribute on the blog; zero <time> tags on the changelog entry",
+        "expected": "<time datetime=\"2025-10-29\">October 29, 2025</time> -- the same visible text, with the machine-readable attribute added"
+      },
+      "confidence": "medium",
+      "suggested_action": {
+        "summary": "Add a datetime attribute to the existing <time> elements on blog posts, and add a <time datetime=\"...\"> element to changelog entries using the date already encoded in each entry's own URL slug.",
+        "priority": "medium",
+        "mechanism": "The publish date is not missing data -- it already renders correctly as visible text and is already encoded in the changelog's own URL structure -- so this is a template fix, not a content or data-sourcing problem. Populating the datetime attribute from the same value already used to generate the visible text and the URL slug also removes the one-day discrepancy observed between the two.",
+        "steps": [
+          "Add datetime=\"<ISO date>\" to the blog post template's existing <time> elements.",
+          "Add a <time datetime=\"...\"> element to the changelog entry template, sourced from the same date used to build the URL slug."
+        ],
+        "verification": "curl -s <any dated URL> | grep -o '<time[^>]*datetime=\"[^\"]*\"' returns a match.",
+        "effort": "trivial",
+        "owner": "engineering"
+      },
+      "severity_score": 0.22,
+      "severity": "low",
+      "id": "F-002"
+    }
+  ],
+  "opportunities": [
+    {
+      "title": "Add HowTo or Article schema specifically to the /docs and /enablement/guides content",
+      "rationale": "These pages are clearly structured, step-oriented reference content -- exactly the kind of material an assistant answering a 'how do I do X in Linear' question would want to quote directly and attribute precisely, distinct from the general Organization/Article markup already recommended for the rest of the site.",
+      "mechanism": "Type-specific markup on the pages most likely to be cited for direct how-to questions gives an assistant a more precise attribution unit than a generic Article type would.",
+      "priority": "low",
+      "steps": [
+        "Add HowTo or TechArticle JSON-LD to the docs and enablement-guide templates specifically, ahead of a broader site-wide rollout."
+      ],
+      "effort": "moderate",
+      "id": "O-001"
+    }
+  ],
+  "not_assessed": [
+    {
+      "check": "Off-site corroboration and entity ambiguity (freshness-corroboration-audit, checks 4-5)",
+      "reason": "Not performed in this run to stay within the demonstration's time budget.",
+      "impact": "Not a meaningful concern for a well-known, distinctively-named entity, but genuinely not checked."
+    },
+    {
+      "check": "Full site coverage",
+      "reason": "15 of 1,009 discovered candidates across 69 templates were sampled -- a broad, stratified cross-section (docs, blog, changelog, careers, customers, guides), not an exhaustive audit of every template.",
+      "impact": "Findings should be read as representative of the shared page templates observed, not as claims about every individual page on the site."
+    }
+  ]
+}

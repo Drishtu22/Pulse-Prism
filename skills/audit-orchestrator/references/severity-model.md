@@ -134,6 +134,18 @@ is no value in telling a site owner their JSON-LD is incomplete on pages no assi
 can fetch. The finding is still reported — it will matter once the blocker is cleared —
 but it must not compete for attention with the blocker.
 
+The automatic version of this (`assemble_report.py`'s `auto_blockers`) only treats a
+stage-1 `critical` finding as a blanket blocker of everything later when its own
+prevalence is `site-wide` specifically, not merely `widespread`. Confirmed live why this
+distinction matters: a robots.txt block naming one specific retrieval agent on specific
+paths can legitimately reach `critical` at `widespread` prevalence, but it only blocks
+*that one agent* — it does nothing to a separate, genuinely universal stage-2 delivery
+failure that blocks every *other* agent too. Auto-capping the universal finding as
+"moot until the narrower one clears" was actively backwards: fixing the named-agent
+robots.txt issue would not touch the delivery failure at all. A narrower stage-1 finding
+can still legitimately block a specific other finding — declare it explicitly via that
+finding's own `blocked_by` field rather than relying on the automatic blanket rule.
+
 **Primary-path lift.** A stage-6 finding on the page that the site's own navigation
 treats as the primary conversion target is raised one band. Losing the visitor at the
 moment of intent costs more than the raw score suggests.

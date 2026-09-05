@@ -176,6 +176,20 @@ score on `research`-pattern content as inconclusive and judge such pages by dire
 reading instead of the numeric threshold; do not report a `research` page as low-density
 on the strength of this measurement alone.
 
+**Do not apply the numeric threshold when the page's declared language is not
+English.** `scripts/quotability.py` reports `declared_language` from the page's own
+`<html lang="...">` attribute. NUMERIC/DEFINITIONAL/CAPABILITY/CLAIM are English-keyword
+patterns ("is a/an/the", "lets you", "we propose") with no equivalent for any other
+language. Confirmed live on a Spanish-language site (`lang="es-mx"`): a glossary page --
+863 words whose entire purpose is defining terms, about as maximally "definitional" as
+content gets -- scored zero on every kind, because Spanish uses "es un/una" and "te
+permite", not "is a" and "lets you". That is total classifier blindness, not evidence of
+thin content, and it would silently misfire on any non-English site without this check.
+Where `declared_language` is present and not `en`/`en-*`, record the density measurement
+but treat it as inconclusive rather than flagging low density from it, the same
+treatment `research`-pattern content gets above. Where `declared_language` is absent,
+judge from the page's own visible text before trusting the number either way.
+
 **Severity inputs.** stage 4 · prevalence · criticality by page role.
 
 ### Check 4 — Question-shaped structure
