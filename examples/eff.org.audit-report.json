@@ -1,0 +1,204 @@
+{
+  "site": "www.eff.org",
+  "audited_at": "2026-09-05T10:32:55Z",
+  "audit_scope": {
+    "pages_sampled": 15,
+    "sample_seed": 42,
+    "sampled_urls": [
+      "https://www.eff.org",
+      "https://www.eff.org/pages/privacy-badger",
+      "https://www.eff.org/about/staff/betelhembetty-zewge-gedlu",
+      "https://www.eff.org/issues/age-verification",
+      "https://www.eff.org/updates?type=event&amp;type=event",
+      "https://www.eff.org/deeplinks",
+      "http://www.eff.org/deeplinks/2026/09/court-rules-against-citizen-journalists-dmca-takedown-case-eff-will-appeal",
+      "https://www.eff.org/about",
+      "https://www.eff.org/about/annual-reports-and-financials",
+      "https://www.eff.org/about/contact",
+      "https://www.eff.org/about/history",
+      "https://www.eff.org/about/opportunities",
+      "https://www.eff.org/about/opportunities/interns",
+      "https://www.eff.org/about/opportunities/volunteer",
+      "https://www.eff.org/about/staff"
+    ],
+    "robots_respected": true
+  },
+  "summary": {
+    "total_findings": 3,
+    "critical": 0,
+    "high": 1,
+    "medium": 0,
+    "low": 2,
+    "stage_scores": {
+      "reachability": 92,
+      "delivery": 100,
+      "textuality": 100,
+      "extractability": 71,
+      "trust": 100,
+      "engagement": 100
+    },
+    "headline": "No structured data of any kind anywhere in the sample -- no Organization identity, no LocalBusiness address, no Article/BlogPosting on editorial content \u2014 high severity, Add a single canonical Organization/LocalBusiness JSON-LD node (name, url, description, address, telephone, sameAs) site-wide, and Article/BlogPosting JSON-LD (headline, datePublished, author) on Deeplinks posts, generated from the same data the visible page already renders."
+  },
+  "findings": [
+    {
+      "title": "No structured data of any kind anywhere in the sample -- no Organization identity, no LocalBusiness address, no Article/BlogPosting on editorial content",
+      "stage": "extractability",
+      "detected_by": "structured-data-audit",
+      "evidence": "0 of 15 sampled pages contain JSON-LD, microdata, or RDFa in any form -- confirmed on the homepage, the About and Contact pages, a staff bio, an issue hub, the blog index, and an individual Deeplinks article with a visible byline and date ('Deeplinks Blog by Betty Gedlu | September 3, 2026'). The organization pattern is detected (About/Contact/staff pages, consistent masthead) and licenses Organization markup with sameAs links; the physical_location pattern is independently confirmed on /about/contact, which states a full postal address ('815 Eddy Street, San Francisco, CA 94109 USA') and phone number ('+1-415-436-9333') in plain visible text with no corresponding LocalBusiness/PostalAddress markup; the editorial pattern is confirmed on the Deeplinks blog, whose articles carry a visible byline and date but no <time> element, no itemprop=\"datePublished\", and no Article/BlogPosting JSON-LD anywhere -- so the article's freshness signal exists only as unstructured prose, not as anything a machine can reliably parse as a date.",
+      "severity_inputs": {
+        "stage": 4,
+        "prevalence": "site-wide",
+        "affected_fraction": 1.0,
+        "criticality": "core"
+      },
+      "reproduction": {
+        "urls": [
+          "https://www.eff.org/",
+          "https://www.eff.org/about/contact",
+          "https://www.eff.org/deeplinks/2026/09/court-rules-against-citizen-journalists-dmca-takedown-case-eff-will-appeal"
+        ],
+        "command": "curl -s https://www.eff.org/about/contact | grep -c 'application/ld+json'",
+        "observed": "0",
+        "expected": ">= 1, containing an Organization node with address and sameAs, and Article markup with datePublished on blog posts"
+      },
+      "confidence": "high",
+      "suggested_action": {
+        "summary": "Add a single canonical Organization/LocalBusiness JSON-LD node (name, url, description, address, telephone, sameAs) site-wide, and Article/BlogPosting JSON-LD (headline, datePublished, author) on Deeplinks posts, generated from the same data the visible page already renders.",
+        "priority": "high",
+        "mechanism": "This is one root cause with three visible symptoms, not three separate defects: the CMS template emits no structured data of any kind, so every pattern-licensed expectation (identity, address, article dating) fails together. Assistants that extract facts via schema.org markup rather than parsing prose get nothing at all from this site currently, and the postal address in particular -- a genuinely load-bearing, rarely-changing core fact -- is stated only in narrative text on one page. Emitting the same values the page already displays as JSON-LD, generated server-side from the same source of truth, closes all three gaps without introducing any drift risk between markup and display.",
+        "steps": [
+          "Add an Organization JSON-LD block (name, url, logo, sameAs to Wikipedia/Wikidata) to the site-wide template.",
+          "Extend it with a PostalAddress and telephone matching the text already on /about/contact.",
+          "Add Article/BlogPosting JSON-LD (headline, datePublished, dateModified, author) to the Deeplinks post template, sourced from the same byline/date already rendered in prose."
+        ],
+        "verification": "curl -s <any sampled URL> | grep -c 'application/ld+json' returns >= 1 on every page; the Deeplinks post template's JSON-LD datePublished matches the visible byline date.",
+        "effort": "moderate",
+        "owner": "engineering"
+      },
+      "severity_score": 0.55,
+      "severity": "high",
+      "id": "F-001"
+    },
+    {
+      "title": "No general sitemap; the only discoverable sitemap covers a single URL and is not referenced from robots.txt",
+      "stage": "reachability",
+      "detected_by": "crawl-access-audit",
+      "evidence": "robots.txt (fetched from https://www.eff.org/robots.txt) contains no 'Sitemap:' directive. /sitemap.xml itself returns HTTP 200 but is a Google News sitemap containing exactly one <url> entry (the single most recent Deeplinks post), not a general site sitemap; /sitemap_index.xml returns 404. That one entry uses the non-canonical origin form 'http://www.eff.org/...' rather than the site's canonical 'https://www.eff.org'. Page discovery for this audit therefore fell back to homepage-link crawling only, surfacing 78 candidate URLs across 42 templates -- a small fraction of a site that visibly publishes a continuous Deeplinks blog, a Legal Cases archive, whitepapers, and a large staff directory.",
+      "severity_inputs": {
+        "stage": 1,
+        "prevalence": "site-wide",
+        "criticality": "informational",
+        "note": "informational: no content degraded, so stage weight is not applied at full strength"
+      },
+      "reproduction": {
+        "urls": [
+          "https://www.eff.org/robots.txt",
+          "https://www.eff.org/sitemap.xml"
+        ],
+        "command": "curl -s https://www.eff.org/robots.txt | grep -i sitemap; curl -s https://www.eff.org/sitemap.xml | head -c 500",
+        "observed": "robots.txt has no Sitemap line; sitemap.xml contains one <url>, in News-sitemap format, with an http:// (non-canonical) loc",
+        "expected": "robots.txt declares Sitemap:; a general sitemap lists the site's full page inventory in the canonical https://www.eff.org form"
+      },
+      "confidence": "high",
+      "suggested_action": {
+        "summary": "Publish a general XML sitemap covering the full page inventory (blog archive, case pages, whitepapers, issue hubs, staff directory), declare it in robots.txt, and keep the existing Google News sitemap as a separate, additional feed rather than the only one.",
+        "priority": "low",
+        "mechanism": "This does not block reachability of any page already reachable by link-following -- every sampled page returned a clean 200 with no robots restriction, so no content is currently hidden. A sitemap instead affects how completely and how quickly a crawler that prioritises sitemap-based discovery (rather than exhaustive link-following) learns about deep or older content, such as multi-year-old case pages that may no longer be linked from any current page.",
+        "steps": [
+          "Generate a sitemap (or sitemap index) enumerating every canonical page URL in https://www.eff.org form.",
+          "Add 'Sitemap: https://www.eff.org/sitemap_index.xml' (or equivalent) to robots.txt.",
+          "Keep the Google News sitemap for its intended purpose; it is not a defect on its own, only as the sole discoverable sitemap."
+        ],
+        "verification": "curl -s https://www.eff.org/robots.txt | grep -i sitemap returns a match; the declared sitemap's entry count approximates the site's true page count.",
+        "effort": "moderate",
+        "owner": "engineering"
+      },
+      "severity_score": 0.2,
+      "severity": "low",
+      "id": "F-002"
+    },
+    {
+      "title": "Homepage offers exactly one self-contained, quotable sentence about what EFF is, with no supporting concrete fact beside it",
+      "stage": "extractability",
+      "detected_by": "answerability-audit",
+      "evidence": "The homepage's genuine definitional statement -- 'The leading nonprofit defending digital privacy, free speech, and innovation.' -- correctly names the entity's category (nonprofit) and purpose in one plain sentence, and is not the defect. Past that single sentence, the homepage's non-navigational text is dominated by news-teaser prose (blog headlines and one-paragraph summaries of current campaigns) rather than additional self-contained, attributable facts about EFF itself: no founding year, no scale indicator (member count, case count, years of operation), no second sentence a reader could quote alongside the first. Measured quotable-fact density on the homepage is 1.97 per 500 words (761 words, 3 quotable sentences) -- at or above this skill's calibrated floor of 1.5 in raw count, but every counted sentence is tangential to EFF's own identity rather than genuine elaboration on it: two are date-substring matches inside article bylines, and the third ('If we want to regulate those technologies to reduce harms without shutting down benefits, we have...') is about AI policy generally, not a claim about EFF. The density measurement alone would not flag this page; the defect is that zero of the sentences it counts actually add a second fact about the entity itself, which is what the definitional-clarity concern in this finding turns on, not the raw threshold.",
+      "severity_inputs": {
+        "stage": 4,
+        "prevalence": "isolated",
+        "affected_fraction": 0.07,
+        "criticality": "core"
+      },
+      "reproduction": {
+        "urls": [
+          "https://www.eff.org/"
+        ],
+        "command": "curl -s https://www.eff.org/ | grep -o 'nonprofit'",
+        "observed": "One match, inside the single hero-section tagline sentence",
+        "expected": "The tagline sentence plus at least one further self-contained, attributable fact about EFF's scale or history"
+      },
+      "confidence": "medium",
+      "suggested_action": {
+        "summary": "Add one or two additional self-contained sentences near the top of the homepage stating a concrete, attributable fact about EFF -- e.g. founding year, or the scale of its case work -- alongside the existing mission tagline.",
+        "priority": "medium",
+        "mechanism": "An assistant summarizing 'what is EFF' currently has one quotable sentence to draw from; a second concrete, specific sentence gives it an attributable fact to add (e.g. a founding date or a scale figure), rather than forcing it to either repeat the same tagline every time or fall back to less specific phrasing.",
+        "steps": [
+          "Add a short, factual sentence directly under or beside the existing tagline -- e.g. stating EFF's founding year and a concrete measure of its work.",
+          "Keep it in plain prose, not only inside an image or a stat-tile graphic, so it remains machine-readable text."
+        ],
+        "verification": "Re-run the quotable-density measurement on the homepage; density rises above 1.5 per 500 words from genuine definitional/capability sentences, not date-substring matches.",
+        "effort": "trivial",
+        "owner": "content"
+      },
+      "severity_score": 0.17,
+      "severity": "low",
+      "id": "F-003"
+    }
+  ],
+  "opportunities": [
+    {
+      "title": "Publish an llms.txt pointing at EFF's highest-value reference content",
+      "rationale": "EFF maintains several large, authoritative reference resources (the Legal Cases archive, Whitepapers, the Surveillance Self-Defense guide) that are exactly the kind of primary-source material an assistant would want to cite directly rather than a news teaser. An llms.txt is a low-effort, low-risk way to point retrieval-capable assistants at that content specifically.",
+      "mechanism": "llms.txt gives a retrieval-capable assistant a curated entry point distinct from the general sitemap, which is oriented at search-engine discovery rather than at what is worth citing.",
+      "priority": "medium",
+      "steps": [
+        "List the Legal Cases index, the Whitepapers index, and Surveillance Self-Defense as top entries.",
+        "Keep it to genuinely reference-grade content, not a mirror of the full sitemap."
+      ],
+      "effort": "trivial",
+      "id": "O-001"
+    },
+    {
+      "title": "Add machine-readable dates to Legal Cases and Whitepapers so 'as of' currency is checkable without opening each document",
+      "rationale": "Case status (open, decided, appealed) and whitepaper publication dates are exactly the kind of volatile fact this audit's stage-5 checks care about, and they were not directly sampled in this run's 15-page stratified sample -- this is a proactive suggestion for a page type known to exist on the site rather than a confirmed defect.",
+      "mechanism": "A case marked only 'Appealed' in prose with no dateModified leaves an assistant unable to tell whether that status is current without a fresh fetch; a machine-readable date lets it reason about staleness directly.",
+      "priority": "low",
+      "steps": [
+        "Add dateModified (and, where applicable, an explicit case-status field) to case and whitepaper pages."
+      ],
+      "effort": "moderate",
+      "id": "O-002"
+    }
+  ],
+  "not_assessed": [
+    {
+      "check": "Off-site corroboration (freshness-corroboration-audit, check 4)",
+      "reason": "Not performed in this run to stay within the demonstration's time budget -- no external domains were queried.",
+      "impact": "Cannot confirm or rule out whether EFF's core identity claims are corroborated or contradicted on independent sources (Wikipedia, press coverage, registry listings). Given EFF's public profile this is expected to pass cleanly, but that is an expectation, not a verified observation, and must not be reported as one."
+    },
+    {
+      "check": "Entity ambiguity (freshness-corroboration-audit, check 5)",
+      "reason": "Judged informally rather than through the full procedure: 'Electronic Frontier Foundation' was judged distinctive enough not to warrant a dedicated collision check within this run's budget.",
+      "impact": "A formal check might still be worth running in a non-demonstration audit, though no collision risk is apparent."
+    },
+    {
+      "check": "Question-coverage probe (answerability-audit, check 1) on membership pricing / tiers",
+      "reason": "The membership/donation-tier page was not part of this run's 15-page stratified sample.",
+      "impact": "Cannot confirm whether 'What does an EFF membership cost?' is extractably answered anywhere on the site."
+    },
+    {
+      "check": "Answer continuity and next-step clarity (engagement-audit, checks 1 and 5) on the donation/conversion path specifically",
+      "reason": "The primary conversion page (the donation flow itself) was not part of this run's sample; only pages linking to it were sampled.",
+      "impact": "The primary-path severity lift in the severity model could not be applied to any finding in this run, since no finding touched a page on that path."
+    }
+  ]
+}

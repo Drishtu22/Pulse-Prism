@@ -1,0 +1,168 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Brand AI-Readiness Audit Report",
+  "description": "Contract for the single report emitted by the audit-orchestrator entrypoint. The required fields are a superset of the round's minimum shape; the additions carry the reproducibility, dependency and coverage information that makes the report actionable.",
+  "type": "object",
+  "required": ["site", "audited_at", "summary", "findings"],
+  "properties": {
+    "site": {
+      "type": "string",
+      "description": "Registrable domain of the audited site, e.g. 'example.com'."
+    },
+    "audited_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 UTC timestamp at which the audit began."
+    },
+    "audit_scope": {
+      "type": "object",
+      "description": "What was actually inspected. Without this a reader cannot tell whether a clean report means a clean site or a shallow crawl.",
+      "properties": {
+        "pages_sampled": { "type": "integer" },
+        "sample_seed": {
+          "type": "integer",
+          "description": "Seed used for deterministic page selection. Re-running with the same seed inspects the same pages."
+        },
+        "sampled_urls": { "type": "array", "items": { "type": "string" } },
+        "content_patterns_detected": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["organization", "transactable", "physical_location", "editorial", "documentation", "events", "listings", "research"]
+          },
+          "description": "Drives which conditional checks apply. See references/content-patterns.md."
+        },
+        "robots_respected": { "type": "boolean" },
+        "duration_seconds": { "type": "number" }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["total_findings", "critical", "high", "medium"],
+      "properties": {
+        "total_findings": { "type": "integer" },
+        "critical": { "type": "integer" },
+        "high": { "type": "integer" },
+        "medium": { "type": "integer" },
+        "low": { "type": "integer" },
+        "stage_scores": {
+          "type": "object",
+          "description": "0-100 per pipeline stage. Lets a reader see which stage is the bottleneck rather than reading fifty findings.",
+          "properties": {
+            "reachability": { "type": "number" },
+            "delivery": { "type": "number" },
+            "textuality": { "type": "number" },
+            "extractability": { "type": "number" },
+            "trust": { "type": "number" },
+            "engagement": { "type": "number" }
+          }
+        },
+        "headline": {
+          "type": "string",
+          "description": "One sentence a non-expert can act on, naming the single highest-leverage fix."
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "severity", "evidence", "suggested_action"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^F-[0-9]{3}$" },
+          "title": { "type": "string" },
+          "severity": { "type": "string", "enum": ["critical", "high", "medium", "low"] },
+          "severity_score": { "type": "number" },
+          "severity_inputs": {
+            "type": "object",
+            "description": "The three quantities severity was derived from. Makes the label auditable.",
+            "properties": {
+              "stage": { "type": "integer", "minimum": 1, "maximum": 6 },
+              "prevalence": { "type": "string", "enum": ["site-wide", "widespread", "partial", "isolated"] },
+              "affected_fraction": { "type": "number" },
+              "criticality": { "type": "string", "enum": ["core", "supporting", "peripheral", "informational"] }
+            }
+          },
+          "stage": {
+            "type": "string",
+            "enum": ["reachability", "delivery", "textuality", "extractability", "trust", "engagement"]
+          },
+          "detected_by": { "type": "string", "description": "Skill id that produced the finding." },
+          "evidence": {
+            "type": "string",
+            "description": "Plain-language statement of what was observed, with counts and URLs. Must state an observation, never an inference."
+          },
+          "reproduction": {
+            "type": "object",
+            "description": "How a developer confirms this themselves. This is what separates a claim from a proof.",
+            "properties": {
+              "urls": { "type": "array", "items": { "type": "string" } },
+              "command": { "type": "string", "description": "A single shell command reproducing the observation." },
+              "observed": { "type": "string" },
+              "expected": { "type": "string" }
+            }
+          },
+          "confidence": {
+            "type": "string",
+            "enum": ["high", "medium", "low"],
+            "description": "Lower when the check ran degraded, e.g. no headless browser available."
+          },
+          "blocked_by": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Finding ids that make this one moot until they are resolved."
+          },
+          "suggested_action": {
+            "type": "object",
+            "required": ["summary", "priority"],
+            "properties": {
+              "summary": { "type": "string" },
+              "priority": { "type": "string", "enum": ["critical", "high", "medium", "low"] },
+              "mechanism": {
+                "type": "string",
+                "description": "Why this fix resolves this cause. A fix that cannot state its mechanism is a guess."
+              },
+              "steps": { "type": "array", "items": { "type": "string" } },
+              "verification": {
+                "type": "string",
+                "description": "How to confirm the fix worked, ideally the reproduction command now returning the expected result."
+              },
+              "effort": { "type": "string", "enum": ["trivial", "moderate", "substantial"] },
+              "owner": { "type": "string", "enum": ["content", "engineering", "marketing", "operations"] }
+            }
+          }
+        }
+      }
+    },
+    "opportunities": {
+      "type": "array",
+      "description": "Improvements where no defect was detected. Required by the round: suggestions may go beyond the problems found.",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "rationale", "priority"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^O-[0-9]{3}$" },
+          "title": { "type": "string" },
+          "rationale": { "type": "string" },
+          "mechanism": { "type": "string" },
+          "priority": { "type": "string", "enum": ["high", "medium", "low"] },
+          "steps": { "type": "array", "items": { "type": "string" } },
+          "effort": { "type": "string", "enum": ["trivial", "moderate", "substantial"] }
+        }
+      }
+    },
+    "not_assessed": {
+      "type": "array",
+      "description": "Checks that could not run. Reporting these honestly is what stops absence of evidence being read as evidence of absence.",
+      "items": {
+        "type": "object",
+        "required": ["check", "reason"],
+        "properties": {
+          "check": { "type": "string" },
+          "reason": { "type": "string" },
+          "impact": { "type": "string", "description": "What a reader cannot conclude because this did not run." }
+        }
+      }
+    }
+  }
+}

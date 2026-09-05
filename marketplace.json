@@ -1,0 +1,45 @@
+{
+  "name": "Pulse&Prism",
+  "version": "1.0.0",
+  "description": "Audits any website for the reasons AI assistants fail to find, read, quote or trust it, and for the reasons AI-referred visitors leave without engaging. Emits a single evidence-backed report of findings and prioritized fixes.",
+  "license": "MIT",
+  "entrypoint": "audit-orchestrator",
+  "skills": [
+    {
+      "id": "audit-orchestrator",
+      "path": "skills/audit-orchestrator",
+      "entrypoint": true,
+      "owns": "Site profiling, page sampling, invocation of the diagnostic skills, finding merge and suppression, severity arbitration, final report emission."
+    },
+    {
+      "id": "crawl-access-audit",
+      "path": "skills/crawl-access-audit",
+      "owns": "Stage 1 — the page was never reachable by an AI client. Robots directives, bot-vs-browser response parity, sitemap health, canonical and redirect integrity."
+    },
+    {
+      "id": "render-extractability-audit",
+      "path": "skills/render-extractability-audit",
+      "owns": "Stage 2 and 3 — the page was reached but the facts were not in the delivered HTML, or were present in a form that is not text."
+    },
+    {
+      "id": "structured-data-audit",
+      "path": "skills/structured-data-audit",
+      "owns": "Stage 4a — machine-readable claims are absent for a detected content pattern, malformed for their declared type, or contradict the visible page text."
+    },
+    {
+      "id": "answerability-audit",
+      "path": "skills/answerability-audit",
+      "owns": "Stage 4b — the prose is readable but contains no self-contained, attributable sentence an assistant could lift as an answer."
+    },
+    {
+      "id": "freshness-corroboration-audit",
+      "path": "skills/freshness-corroboration-audit",
+      "owns": "Stage 5 — the fact is quotable but carries no recency signal, is contradicted across the site, is corroborated nowhere off-site, or belongs to an ambiguous entity."
+    },
+    {
+      "id": "engagement-audit",
+      "path": "skills/engagement-audit",
+      "owns": "Stage 6 — the assistant-referred visitor arrived on a deep page and left. Answer continuity, deep-entry orientation, entry obstruction, delivery performance."
+    }
+  ]
+}
