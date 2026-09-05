@@ -33,6 +33,29 @@ def looks_like_phone(s):
     return any(len(g) >= 2 for g in groups) and 7 <= digit_total <= 15
 
 
+META_TAG = re.compile(r"<meta\b([^>]*)>", re.I)
+META_ATTR = re.compile(r'(\w[\w:-]*)\s*=\s*["\']([^"\']*)["\']')
+
+
+def extract_meta_social(html):
+    """Open Graph and Twitter Card are a distinct, lower-depth vocabulary from
+    schema.org -- consulted by link-preview generators (Slack, iMessage, LinkedIn) and
+    some assistants as a simple fallback -- so they're recorded separately from the
+    jsonld/microdata/rdfa signals above, not folded into them."""
+    og, twitter = {}, {}
+    for m in META_TAG.finditer(html):
+        attrs = dict(META_ATTR.findall(m.group(1)))
+        content = attrs.get("content")
+        if content is None:
+            continue
+        prop, name = attrs.get("property", "").lower(), attrs.get("name", "").lower()
+        if prop.startswith("og:"):
+            og[prop[3:]] = content
+        elif name.startswith("twitter:"):
+            twitter[name[8:]] = content
+    return og, twitter
+
+
 def types_in(node, acc):
     if isinstance(node, dict):
         t = node.get("@type")
@@ -89,6 +112,7 @@ def main():
                 errors.append(str(e))
 
         text = WS.sub(" ", TAG.sub(" ", re.sub(r"<(script|style)\b.*?</\1>", " ", html, flags=re.I | re.S)))
+        og_tags, twitter_card = extract_meta_social(html)
         res["pages"].append({
             "url": url, "status": status,
             "jsonld_blocks": blocks,
@@ -96,6 +120,8 @@ def main():
             "types_declared": sorted(all_types),
             "has_microdata": bool(re.search(r'itemscope', html, re.I)),
             "has_rdfa": bool(re.search(r'\bvocab=|\btypeof=', html, re.I)),
+            "og_tags": og_tags,
+            "twitter_card": twitter_card,
             "visible_candidates": {
                 "prices": sorted(set(PRICE.findall(text)))[:15],
                 "time_ranges": sorted(set(TIME_RANGE.findall(text)))[:10],

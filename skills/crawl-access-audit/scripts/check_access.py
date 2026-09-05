@@ -233,6 +233,29 @@ def rule_for(groups, agent, path):
     return verdict, ("named" if agent in groups else "wildcard")
 
 
+MD_LINK = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
+MD_HEADING = re.compile(r"^#{1,6}\s+\S", re.M)
+
+
+def fetch_llms_txt(origin):
+    """Observe /llms.txt without judging it -- SKILL.md decides whether an absent file
+    is a non-issue (it is; this is an emerging, informal convention most sites do not
+    yet have) versus a present-but-hollow one (a real, if minor, defect)."""
+    obs = fetch(f"{origin}/llms.txt", BROWSER_UA)
+    if not obs["ok"] or obs["status"] != 200 or not obs["body"].strip():
+        return {"present": False, "status": obs["status"]}
+    body = obs["body"]
+    links = MD_LINK.findall(body)
+    return {
+        "present": True,
+        "bytes": len(body.encode("utf-8", errors="ignore")),
+        "has_heading": bool(MD_HEADING.search(body)),
+        "link_count": len(links),
+        "sample_links": links[:15],
+        "raw_preview": body[:2000],
+    }
+
+
 def origin_forms(origin):
     p = urllib.parse.urlparse(origin)
     host = p.netloc
@@ -255,10 +278,14 @@ def main():
         "origin": origin,
         "observed_at": datetime.now(timezone.utc).isoformat(),
         "robots": {},
+        "llms_txt": {},
         "origin_forms": [],
         "pages": [],
         "notes": [],
     }
+
+    out["llms_txt"] = fetch_llms_txt(origin)
+    polite_pause()
 
     # --- robots.txt -------------------------------------------------------------
     robots_obs = fetch(f"{origin}/robots.txt", BROWSER_UA)

@@ -2,7 +2,7 @@
 name: crawl-access-audit
 description: >
   Determines whether an AI client can obtain a site's pages at all — stage 1 of the
-  brand-ai-readiness pipeline. Checks robots.txt for directives targeting AI crawlers,
+  Pulse-Prism pipeline. Checks robots.txt for directives targeting AI crawlers,
   compares responses to AI-crawler user-agents against browser user-agents to expose
   bot-management blocks, and validates sitemap health, redirect chains and canonical
   integrity. Use when auditing why a site is absent from AI assistants, when a site
@@ -220,6 +220,37 @@ beyond 10 s, login redirects on pages linked from public navigation, or geo-bloc
 area — and is not presented as public content.
 
 **Severity inputs.** stage 1 · prevalence from affected fraction · criticality by page role.
+
+### Check 6 — llms.txt presence and quality
+
+**Applies:** always.
+
+**Procedure.** `scripts/check_access.py` already fetches `/llms.txt` and records
+`llms_txt` in its observations: presence, byte count, whether a Markdown heading exists,
+and every `[text](url)` link found. Where present, judge whether the linked pages are
+genuinely representative of the site's high-value content rather than only boilerplate
+(legal, careers) or the homepage repeated — cross-check `sample_links` against the URL
+templates the orchestrator sampled.
+
+**Flag when.** The file exists but is hollow — no headings, no links, every linked page
+404s — or its links point exclusively at low-value pages while omitting the site's own
+primary content entirely.
+
+**Do not flag when.** The file does not exist. `llms.txt` is an emerging, informal
+convention that most sites — including well-optimised ones — do not yet publish; its
+absence is a forward-looking opportunity, not a defect, and belongs in `opportunities`,
+never in `findings`. Only a present-but-broken file is this check's concern.
+
+**Evidence format.**
+`/llms.txt returns HTTP 200 with 40 bytes: "# Example" and no further content — no headings beyond the title, no links.`
+
+**Severity inputs.** stage 1 · `site-wide` · criticality `supporting`.
+
+**Fix mechanism.** A present-but-hollow file is worse than none: it signals investment
+without substance, and a retrieval-capable assistant that discovers it gets nothing
+usable from it. Populate it with links to the site's genuinely highest-value pages —
+the same pages this audit's other checks already treat as core content — grouped under
+clear headings, rather than leaving a placeholder.
 
 ## Degradation
 

@@ -1,7 +1,7 @@
 ---
 name: audit-orchestrator
 description: >
-  Entrypoint for the Pulse&Prism marketplace. Given a website URL or
+  Entrypoint for the Pulse-Prism marketplace. Given a website URL or
   domain, profiles the site, samples its pages, runs every diagnostic skill in the
   marketplace against that shared sample, merges their findings into one prioritized
   evidence-backed report, and emits it as JSON. Use this whenever someone asks why a

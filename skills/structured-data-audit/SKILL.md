@@ -1,7 +1,7 @@
 ---
 name: structured-data-audit
 description: >
-  Audits machine-readable claims — stage 4a of the brand-ai-readiness pipeline. Checks
+  Audits machine-readable claims — stage 4a of the Pulse-Prism pipeline. Checks
   whether schema.org structured data exists for the content patterns a site actually
   exhibits, whether it is valid and complete for its declared type, and critically
   whether it agrees with the page's visible text. Use when auditing why AI assistants
@@ -141,6 +141,41 @@ opportunity rather than a defect, and mislabelling it as a defect is unfair.
 
 **Severity inputs.** stage 4 · `site-wide` · criticality `core` when disambiguation
 matters for the entity name.
+
+### Check 5 — Open Graph and Twitter Card completeness
+
+**Applies:** to pages a visitor would plausibly share or an assistant would plausibly
+preview — the homepage, primary landing pages, articles, product pages. Not to internal
+utility pages (login, search) where sharing is irrelevant.
+
+**Procedure.** `scripts/extract_jsonld.py` records `og_tags` (title, description, image,
+type, url) and `twitter_card` from each page's `<meta>` tags. This is a materially
+different, lower-depth channel than schema.org — used by link-preview generators
+(Slack, iMessage, LinkedIn) and consulted by some assistants as a simple fallback when
+richer markup is absent — not a substitute for the Organization/Product markup Checks
+1-3 already cover. Compare `og:title`/`og:description` against the page's own `<title>`
+and definitional sentence for agreement, the same way Check 3 compares JSON-LD against
+visible text.
+
+**Flag when.** A page in scope has no `og:title`/`og:description` at all, or the values
+present contradict the page's own visible title or definitional sentence.
+
+**Do not flag when.** The page's role makes sharing implausible. Do not treat a missing
+`og:image` alone as more than a minor completeness gap — title and description are the
+load-bearing fields; the image is a nice-to-have.
+
+**Evidence format.**
+`14 of 15 sampled pages have no og:title or og:description meta tags. The one page that does (the homepage) declares og:title "Acme" while its own <title> reads "Acme — Payroll for UK Teams" -- a narrower, contradictory value.`
+
+**Severity inputs.** stage 4 · prevalence · criticality `supporting` — this is a
+lower-depth, higher-adoption complement to full schema.org markup, not a replacement for
+it. A missing price or address in JSON-LD is `core`; a missing preview tag is
+`supporting`.
+
+**Fix mechanism.** Add `og:title`, `og:description`, `og:image` and `og:type` to the
+page template, sourced from the same values already feeding the `<title>` tag and meta
+description, so the two cannot drift independently. This is typically a small addition
+since the underlying values already exist in the template.
 
 ## Interaction with other skills
 

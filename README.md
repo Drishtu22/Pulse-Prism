@@ -1,4 +1,4 @@
-# Pulse&Prism
+# Pulse-Prism
 
 An Agent Skill Marketplace that audits any website for the reasons AI assistants fail to
 find, read, quote or trust it — and for the reasons visitors who arrive from an assistant
@@ -45,9 +45,9 @@ and why the report suppresses findings that sit behind an unresolved blocker.
 | Skill | Stage | Owns |
 |---|---|---|
 | **audit-orchestrator** *(entrypoint)* | — | Site profiling, page sampling, invoking the six diagnostic skills, merging and deduplicating their findings, deriving severity, emitting the report |
-| **crawl-access-audit** | 1 | robots.txt directives per AI agent, bot-vs-browser response parity, sitemap health, redirect and canonical integrity |
+| **crawl-access-audit** | 1 | robots.txt directives per AI agent, bot-vs-browser response parity, sitemap health, redirect and canonical integrity, `llms.txt` presence and quality |
 | **render-extractability-audit** | 2, 3 | JavaScript dependency ratio, core facts missing from raw HTML, facts locked in images, canvas/PDF/video carriers, interaction-gated content |
-| **structured-data-audit** | 4 | Schema coverage against detected content patterns, validity and completeness, **agreement with visible text**, identity linkage |
+| **structured-data-audit** | 4 | Schema coverage against detected content patterns, validity and completeness, **agreement with visible text**, identity linkage, Open Graph/Twitter Card completeness |
 | **answerability-audit** | 4 | **Question-coverage probe**, definitional clarity, quotable-fact density, question-shaped structure, claim attribution |
 | **freshness-corroboration-audit** | 5 | Recency signals on volatile facts, staleness, internal consistency, off-site corroboration, entity ambiguity |
 | **engagement-audit** | 6 | Answer continuity above the fold, deep-entry orientation, entry obstruction, delivery performance, next-step clarity |
@@ -114,11 +114,11 @@ guessed at. Absence of evidence is never reported as evidence of absence.
 ## Layout
 
 ```
-Pulse&Prism/
+Pulse-Prism/
 ├── marketplace.json
 ├── README.md
 ├── validate_marketplace.py
-├── examples/                         ← sample audit reports from real, live runs
+├── tested-examples/                  ← sample audit reports from real, live runs
 └── skills/
     ├── audit-orchestrator/          ← entrypoint
     │   ├── SKILL.md
