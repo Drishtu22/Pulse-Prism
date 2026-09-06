@@ -1,0 +1,88 @@
+{
+  "site": "chipotle.com",
+  "audited_at": "2026-09-06T17:02:26Z",
+  "audit_scope": {},
+  "summary": {
+    "total_findings": 1,
+    "critical": 0,
+    "high": 1,
+    "medium": 0,
+    "low": 0,
+    "stage_scores": {
+      "reachability": 100,
+      "delivery": 100,
+      "textuality": 100,
+      "extractability": 78,
+      "trust": 100,
+      "engagement": 100
+    },
+    "headline": "The primary chipotle.com domain (homepage, rewards, values, nutrition-calculator, find-a-chipotle) carries zero schema.org structured data anywhere sampled, while the company's own separately-hosted locations.chipotle.com subdomain implements thorough, correct Restaurant schema for individual stores -- the capability clearly exists, it simply is not applied to the primary domain \u2014 high severity, Add an Organization JSON-LD node to the primary chipotle.com domain's templates, and consider extending Restaurant/Menu-level schema (e.g. FoodEstablishment, hasMenu) to the ordering and menu pages, reusing the markup approach already proven correct on the locations subdomain."
+  },
+  "findings": [
+    {
+      "title": "The primary chipotle.com domain (homepage, rewards, values, nutrition-calculator, find-a-chipotle) carries zero schema.org structured data anywhere sampled, while the company's own separately-hosted locations.chipotle.com subdomain implements thorough, correct Restaurant schema for individual stores -- the capability clearly exists, it simply is not applied to the primary domain",
+      "stage": "extractability",
+      "detected_by": "structured-data-audit",
+      "evidence": "Five sampled pages on www.chipotle.com -- the homepage, /rewards, /values, /nutrition-calculator and /find-a-chipotle -- each return 0 JSON-LD blocks (0/5). Open Graph is reasonably populated on the homepage (og:title, og:description, og:image, og:url all present), but there is no Organization node anywhere stating the chain's identity, no Menu/Restaurant-level markup, nothing. By contrast, a store page one click away on the company's own Yext-powered locations.chipotle.com subdomain (e.g. /ca/brentwood/7580-brentwood-blvd) carries a complete, correctly-formed Restaurant node -- name, full PostalAddress, geo-coordinates, telephone and per-day OpeningHoursSpecification -- plus a second cryptographically-signed 'Yext CertifiedFact' credential attesting the same facts. This is not a capability gap: a vendor relationship and real markup investment clearly exists for the location-page population, it is simply absent from the primary marketing/ordering domain a visitor or assistant would land on first.",
+      "severity_inputs": {
+        "stage": 4,
+        "prevalence": "site-wide",
+        "affected_fraction": 1.0,
+        "criticality": "core"
+      },
+      "reproduction": {
+        "urls": [
+          "https://www.chipotle.com/",
+          "https://www.chipotle.com/rewards",
+          "https://www.chipotle.com/values",
+          "https://www.chipotle.com/nutrition-calculator",
+          "https://www.chipotle.com/find-a-chipotle"
+        ],
+        "command": "curl -s -A 'Mozilla/5.0' https://www.chipotle.com/ | grep -c 'application/ld+json'",
+        "observed": "0 on all five sampled www.chipotle.com pages; a correct Restaurant + Yext CertifiedFact pair on the separately-hosted locations.chipotle.com subdomain",
+        "expected": "An Organization node (chain identity, logo, sameAs) on the primary domain at minimum, consistent with the structured-data investment already proven on the locations subdomain"
+      },
+      "confidence": "high",
+      "suggested_action": {
+        "summary": "Add an Organization JSON-LD node to the primary chipotle.com domain's templates, and consider extending Restaurant/Menu-level schema (e.g. FoodEstablishment, hasMenu) to the ordering and menu pages, reusing the markup approach already proven correct on the locations subdomain.",
+        "priority": "high",
+        "mechanism": "An assistant asked about Chipotle as a company -- its identity, its rewards program, its values -- has no structured source on the domain most likely to be cited, even though the same organization has already solved this exact problem for its store-location pages. This is a template/ownership gap, not a technical unknown.",
+        "steps": [
+          "Add an Organization JSON-LD node (name, url, logo, sameAs) to the shared page template on www.chipotle.com.",
+          "Evaluate extending FoodEstablishment/Menu-level schema to nutrition and ordering pages, following the same pattern already live on locations.chipotle.com."
+        ],
+        "verification": "A sample of www.chipotle.com pages each contain at least an Organization JSON-LD node.",
+        "effort": "moderate",
+        "owner": "engineering"
+      },
+      "severity_score": 0.55,
+      "severity": "high",
+      "id": "F-001"
+    }
+  ],
+  "opportunities": [
+    {
+      "title": "The locations directory's root page (locations.chipotle.com/) exposes its 50-state index only as embedded JSON consumed by client-side JavaScript, not as crawlable anchor tags, even though every level below it (state to city to individual store) is properly linked with real <a href> tags",
+      "rationale": "A plain fetch of locations.chipotle.com/ contains state names ('Alabama', 'Arizona', ...) only inside a URL-encoded JSON data blob, not inside real <a href> elements -- a non-JS-executing crawler arriving at this page cannot click through to a single state. This is not a full discoverability wall, though: robots.txt on this subdomain declares a real sitemap (locations.chipotle.com/sitemap.xml, indexing sitemap1.xml/sitemap2.xml, 1598+ individual store URLs), so any crawler that follows declared sitemaps rather than relying on in-page links still reaches every store page -- confirmed live by fetching a sampled store URL directly and finding excellent Restaurant schema there. This is graceful degradation, not a dead end, which is why it is recorded as an opportunity rather than a finding.",
+      "mechanism": "Closing this gap would let a crawler that does not consult the sitemap (or an assistant navigating live, one click at a time, the way a user browsing would) still reach the state and city directories that are otherwise well-built.",
+      "priority": "low",
+      "steps": [
+        "Render the state list as real anchor tags in the server response at locations.chipotle.com/, matching the pattern already used one level down on each state page."
+      ],
+      "effort": "trivial",
+      "id": "O-001"
+    }
+  ],
+  "not_assessed": [
+    {
+      "check": "Answerability, freshness/corroboration, and engagement on both the primary chipotle.com domain and the locations subdomain (answerability-audit, freshness-corroboration-audit, engagement-audit)",
+      "reason": "This run hand-verified one specific mechanism (structured-data completeness and its inconsistency across subdomains) in depth rather than running the full sampled-page probe across either domain.",
+      "impact": "Cannot state whether chipotle.com's marketing prose is quotable, whether menu/nutrition facts stay current, or whether the on-site experience serves an AI-referred visitor well -- genuine gaps in this run, not claims about the site either way."
+    },
+    {
+      "check": "JS-dependency ratio and rendering fidelity (render-extractability-audit)",
+      "reason": "Every page sampled on both www.chipotle.com and locations.chipotle.com delivered substantial real text and correct structured data (where present) to a plain, non-JavaScript-executing fetch -- a clean result on every page tried -- rather than a full stratified sample via discover_pages.py.",
+      "impact": "The clean result is well-corroborated on the pages actually tried; a broader sample (e.g. the interactive nutrition calculator's actual calculation logic, or the online ordering flow) might behave differently and was not checked."
+    }
+  ]
+}

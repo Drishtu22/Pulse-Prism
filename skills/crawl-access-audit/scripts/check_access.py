@@ -251,6 +251,9 @@ MD_LINK = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
 MD_HEADING = re.compile(r"^#{1,6}\s+\S", re.M)
 
 
+HTML_DOC_START = re.compile(r"^\s*<(!doctype html|html)\b", re.I)
+
+
 def fetch_llms_txt(origin):
     """Observe /llms.txt without judging it -- SKILL.md decides whether an absent file
     is a non-issue (it is; this is an emerging, informal convention most sites do not
@@ -259,6 +262,14 @@ def fetch_llms_txt(origin):
     if not obs["ok"] or obs["status"] != 200 or not obs["body"].strip():
         return {"present": False, "status": obs["status"]}
     body = obs["body"]
+    # Confirmed live (spotify.com): a Next.js app's catch-all route serves its custom
+    # 404 page for *any* unrecognized path, including /llms.txt, as an honest HTTP 200
+    # with a real HTML body -- the exact case status-only presence checks are blind to.
+    # A genuine llms.txt is plain text/markdown; an HTML document at that path, on a
+    # site otherwise built this way, is a soft-404 wearing a 200, not a real file.
+    content_type = obs.get("headers", {}).get("content-type", "")
+    if "text/html" in content_type.lower() or HTML_DOC_START.match(body):
+        return {"present": False, "status": 200, "note": "soft_404_html_shell"}
     links = MD_LINK.findall(body)
     return {
         "present": True,

@@ -153,4 +153,3 @@ bot-parity check. No authenticated areas, no form submission, no checkout flows.
 are spaced and capped at 60 per audit within a 5-minute budget. Nothing is sent to a
 third-party service; validation is local.
 
-License: MIT.
