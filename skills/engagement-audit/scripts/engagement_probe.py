@@ -23,7 +23,7 @@ tier-2 fields are simply absent and `timing_measures_available` /
 Usage:
     python engagement_probe.py --urls sample.txt --out observations.json
 """
-import argparse, json, os, re, subprocess, tempfile, time, urllib.request
+import argparse, json, os, re, subprocess, tempfile, time, urllib.parse, urllib.request
 from datetime import datetime, timezone
 
 UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
@@ -343,7 +343,11 @@ def main():
     for url in urls:
         started = time.time()
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": UA})
+            # A raw, non-percent-encoded non-ASCII URL makes urllib raise
+            # UnicodeEncodeError building the request line; re-quoting is idempotent
+            # on an already-encoded URL since '%' stays in the safe set.
+            safe_url = urllib.parse.quote(url, safe=":/?#[]@!$&'()*+,;=%")
+            req = urllib.request.Request(safe_url, headers={"User-Agent": UA})
             with urllib.request.urlopen(req, timeout=12) as r:
                 html = r.read(3_000_000).decode("utf-8", errors="replace")
                 size = len(html)

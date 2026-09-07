@@ -9,7 +9,7 @@ inferring a render gap from thin HTML alone would be a guess.
 Usage:
     python render_diff.py --urls sample.txt --out observations.json
 """
-import argparse, json, re, subprocess, sys, time, urllib.request, urllib.error
+import argparse, json, re, subprocess, sys, time, urllib.parse, urllib.request, urllib.error
 from datetime import datetime, timezone
 
 UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
@@ -42,6 +42,10 @@ def visible_text(html, main_only=True):
 
 
 def fetch_raw(url):
+    # A raw, non-percent-encoded non-ASCII URL makes urllib raise UnicodeEncodeError
+    # building the request line; re-quoting is idempotent on an already-encoded URL
+    # since '%' stays in the safe set.
+    url = urllib.parse.quote(url, safe=":/?#[]@!$&'()*+,;=%")
     req = urllib.request.Request(url, headers={"User-Agent": UA})
     try:
         with urllib.request.urlopen(req, timeout=TIMEOUT) as r:

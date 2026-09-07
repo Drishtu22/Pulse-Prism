@@ -14,7 +14,7 @@ Standard library only, so the skill stays portable and needs no install step.
 Usage:
     python freshness_signals.py --urls sample.txt --out observations.json
 """
-import argparse, json, re, time, urllib.request
+import argparse, json, re, time, urllib.parse, urllib.request
 from datetime import datetime, timezone
 
 UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
@@ -125,7 +125,11 @@ def main():
     res = {"observed_at": datetime.now(timezone.utc).isoformat(), "pages": []}
     for url in [l.strip() for l in open(a.urls) if l.strip()]:
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": UA})
+            # A raw, non-percent-encoded non-ASCII URL makes urllib raise
+            # UnicodeEncodeError building the request line; re-quoting is idempotent
+            # on an already-encoded URL since '%' stays in the safe set.
+            safe_url = urllib.parse.quote(url, safe=":/?#[]@!$&'()*+,;=%")
+            req = urllib.request.Request(safe_url, headers={"User-Agent": UA})
             with urllib.request.urlopen(req, timeout=12) as r:
                 html = r.read(2_000_000).decode("utf-8", errors="replace")
                 status = r.status

@@ -84,8 +84,18 @@ def polite_pause():
     time.sleep(random.uniform(MIN_GAP, MAX_GAP))
 
 
+GOOD_URL_CHARS = ":/?#[]@!$&'()*+,;=%"
+
+
 def fetch(url, ua, method="GET"):
     """Fetch a URL, returning an observation dict. Never raises."""
+    # Confirmed live (ja.wikipedia.org): a URL containing raw, non-percent-encoded
+    # non-ASCII characters (real page hrefs are properly encoded, but a malformed site
+    # or a non-compliant sitemap generator can still emit one) makes urllib raise
+    # UnicodeEncodeError deep inside the HTTP request line -- caught below, but
+    # indistinguishable from a genuine network failure without this. Re-quoting is
+    # idempotent (the '%' stays in the safe set) so an already-encoded URL is untouched.
+    url = urllib.parse.quote(url, safe=GOOD_URL_CHARS)
     req = urllib.request.Request(
         url,
         method=method,

@@ -41,6 +41,13 @@ ASSET = re.compile(r"\.(jpg|jpeg|png|gif|webp|svg|ico|css|js|zip|mp4|mp3|woff2?|
 
 
 def fetch(url):
+    # A raw, non-percent-encoded non-ASCII URL (confirmed live off a non-English
+    # site's page) makes urllib raise UnicodeEncodeError building the request line;
+    # re-quoting is idempotent on an already-encoded URL since '%' stays in the safe
+    # set. Left unfixed, this silently degrades page discovery specifically on
+    # non-English sites, since discovered hrefs/<loc> values are the ones most likely
+    # to carry native-script paths.
+    url = urllib.parse.quote(url, safe=":/?#[]@!$&'()*+,;=%")
     req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "*/*"})
     try:
         with urllib.request.urlopen(req, timeout=TIMEOUT) as r:

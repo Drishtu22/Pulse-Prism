@@ -1,0 +1,76 @@
+{
+  "site": "duolingo.com",
+  "audited_at": "2026-09-07T13:58:58Z",
+  "audit_scope": {},
+  "summary": {
+    "total_findings": 1,
+    "critical": 1,
+    "high": 0,
+    "medium": 0,
+    "low": 0,
+    "stage_scores": {
+      "reachability": 100,
+      "delivery": 66,
+      "textuality": 100,
+      "extractability": 100,
+      "trust": 100,
+      "engagement": 100
+    },
+    "headline": "The homepage and other primary marketing pages reduce to 8 characters of visible text ('Duolingo') for a non-JavaScript-executing fetcher; the site's own no-JS fallback -- a real, substantive 1,307-character page -- exists but is unreachable by exactly this kind of fetcher because it is wired through a <noscript><meta http-equiv=\"refresh\"> redirect, a mechanism only a JS-disabled *browser* interprets, not a plain HTTP client \u2014 critical severity, Serve the existing /nojs/splash content (or equivalent server-rendered text) directly at the primary marketing URLs for requests that do not execute JavaScript, rather than relying on a <noscript> meta-refresh that only legacy JS-disabled browsers will follow."
+  },
+  "findings": [
+    {
+      "title": "The homepage and other primary marketing pages reduce to 8 characters of visible text ('Duolingo') for a non-JavaScript-executing fetcher; the site's own no-JS fallback -- a real, substantive 1,307-character page -- exists but is unreachable by exactly this kind of fetcher because it is wired through a <noscript><meta http-equiv=\"refresh\"> redirect, a mechanism only a JS-disabled *browser* interprets, not a plain HTTP client",
+      "stage": "delivery",
+      "detected_by": "render-extractability-audit",
+      "evidence": "A plain fetch to https://www.duolingo.com/, /courses and /blog each return HTTP 200 but reduce to 8 characters of visible text ('Duolingo', the title) after stripping markup and scripts; /press yields only 73. Zero JSON-LD exists on any of these. However, the homepage does contain a <noscript> block: '<meta http-equiv=\"refresh\" content=\"0; url=/nojs/splash\">' -- evidence the site deliberately built a fallback for clients that do not execute JavaScript. Fetching that fallback URL directly (https://www.duolingo.com/nojs/splash) confirms it holds real, substantive content: 1,307 characters of genuine marketing copy describing what Duolingo is and how it works. The fallback mechanism does not help a plain HTTP fetcher, though: a <meta http-equiv=\"refresh\"> tag is a browser-interpreted redirect instruction, not something a non-rendering HTTP client (which is how the overwhelming majority of AI retrieval agents actually operate) will ever act on -- it is inert text to them, exactly as it is to this audit's own plain-fetch method. The fallback was built for the JS-disabled-browser case, a shrinking and different population from the non-executing-fetcher case this audit's checks target.",
+      "severity_inputs": {
+        "stage": 2,
+        "prevalence": "site-wide",
+        "affected_fraction": 1.0,
+        "criticality": "core"
+      },
+      "reproduction": {
+        "urls": [
+          "https://www.duolingo.com/",
+          "https://www.duolingo.com/courses",
+          "https://www.duolingo.com/blog",
+          "https://www.duolingo.com/nojs/splash"
+        ],
+        "command": "curl -s -A 'Mozilla/5.0' https://www.duolingo.com/ | sed -E 's/<[^>]+>//g' | tr -s ' \\n' ' ' | wc -c",
+        "observed": "8 on the homepage (and similarly thin on /courses and /blog), versus 1307 on the /nojs/splash fallback page a plain fetcher never reaches",
+        "expected": "The real content already written and hosted at /nojs/splash served directly at the primary URLs for non-JS-executing requests, or exposed via a mechanism a plain HTTP client actually processes (server-side rendering, or at minimum an HTML <a> link rather than a meta-refresh)"
+      },
+      "confidence": "high",
+      "suggested_action": {
+        "summary": "Serve the existing /nojs/splash content (or equivalent server-rendered text) directly at the primary marketing URLs for requests that do not execute JavaScript, rather than relying on a <noscript> meta-refresh that only legacy JS-disabled browsers will follow.",
+        "priority": "critical",
+        "mechanism": "The content already exists and is already written -- this is a wiring problem, not a content gap. A meta-refresh inside <noscript> assumes the client is a browser rendering the page and choosing not to run JavaScript; an AI agent fetching the page over plain HTTP never gets that far, so the safety net silently does not catch the exact case it appears designed for.",
+        "steps": [
+          "Server-render (or prerender) the homepage and primary marketing pages so real text is present in the initial HTML response.",
+          "If a fallback page must remain separate, replace the noscript meta-refresh with content directly inlined in the main response, since a meta-refresh cannot be relied upon to reach non-browser clients.",
+          "Add JSON-LD (Organization at minimum) once real server-rendered text exists."
+        ],
+        "verification": "A plain, non-JavaScript-executing fetch to the homepage returns substantive visible text describing Duolingo, matching what /nojs/splash already contains.",
+        "effort": "moderate",
+        "owner": "engineering"
+      },
+      "severity_score": 0.85,
+      "severity": "critical",
+      "id": "F-001"
+    }
+  ],
+  "opportunities": [],
+  "not_assessed": [
+    {
+      "check": "Structured data, answerability, freshness/corroboration, and engagement (structured-data-audit, answerability-audit, freshness-corroboration-audit, engagement-audit)",
+      "reason": "The homepage and other primary marketing pages deliver almost no text to a non-JavaScript-executing fetcher (see the render-extractability finding), leaving no prose to derive questions from and no markup-bearing content to check on the pages a plain fetch actually receives. The /nojs/splash fallback page does have real content, but it is not the page these checks would run against in a normal crawl.",
+      "impact": "Cannot assess whether Duolingo's marketing copy is quotable, current, or well-corroborated, or how an AI-referred visitor experiences a deep page -- genuine gaps in this run, not claims about the site's real, browser-rendered experience, which was not inspected."
+    },
+    {
+      "check": "On-site engagement -- LCP/CLS/TBT, viewport occlusion (engagement-audit)",
+      "reason": "No headless-browser engine (Playwright/Puppeteer) was available in this run's environment.",
+      "impact": "Cannot assess the actual on-site experience for a client that does execute JavaScript."
+    }
+  ]
+}

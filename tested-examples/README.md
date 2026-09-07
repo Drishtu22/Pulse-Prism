@@ -1,7 +1,7 @@
 # Example audit reports
 
-These are fifteen **real, live audit runs** — not fabricated or hand-edited — produced by
-actually invoking `audit-orchestrator` against fifteen unseen, unrelated public websites
+These are nineteen **real, live audit runs** — not fabricated or hand-edited — produced by
+actually invoking `audit-orchestrator` against nineteen unseen, unrelated public websites
 chosen to span different CMS platforms and content patterns. Each finding was
 independently verified against the live site (direct fetches, DOM inspection, or a
 second confirming request) before being written into the report; nothing here is a
@@ -23,13 +23,17 @@ schema-valid against `skills/audit-orchestrator/references/report-schema.json`.
 | [linear.app](linear.app.audit-report.json) | Modern SaaS · JS-framework marketing site | 1 high, 1 low | Zero schema.org anywhere despite excellent, complete Open Graph/Twitter Card coverage on every page — the first live case distinguishing "invested in the wrong depth of markup" from the other reports' "invested in nothing." Also the first site whose `<time>` elements are present but missing their `datetime` attribute |
 | [techcrunch.com](techcrunch.com.audit-report.json) | Major publisher · WordPress VIP | 2 low | Excellent core `Event` markup (correct dates, `EventScheduled`, full `PostalAddress`) for a real, ticketed conference — but its sponsor list is 76 entries deep and every single one is a hollow `{"name": ""}`. Also the first WordPress site tested, and the first robots.txt that doesn't cleanly fit either "blocks everything" or "blocks only training" — it disallows one OpenAI retrieval agent while leaving another unmentioned |
 | [airbnb.com](airbnb.com.audit-report.json) | Global marketplace · randomly selected | **2 critical** | Every page on the domain — homepage, listings, everything — serves only a JavaScript-triggered form-POST redirect stub to a non-executing fetcher; confirmed a real headless browser completes it fine, so this is a pure delivery gap, not a technical wall. Independently, robots.txt disallows `PerplexityBot` — and only `PerplexityBot` — from every listing, while Perplexity's own second agent stays permitted. The two findings are unrelated root causes with disjoint scopes, which is itself what this run's fix (below) is about |
-| [moma.org](moma.org.audit-report.json) | Museum / cultural institution · randomly selected | 1 high, 1 low | The first live true positive for the "disguised bot challenge" detection mechanism across all fifteen sites: a burst of same-URL requests triggers a real Cloudflare challenge on two high-value paths (an individual collection artwork, the exhibitions index), identically for every user-agent tested — but a single, well-paced request to the same URL succeeds, so this is reported as burst-sensitivity, not a permanent block. Separately, real `VisualArtwork` schema (a first) is missing the date, medium, and description already stated in the page's own visible text, while a sampled exhibition page's `Event`/`Offer` markup is fully complete — the site's structured-data investment is real but inconsistent across templates |
+| [moma.org](moma.org.audit-report.json) | Museum / cultural institution · randomly selected | 1 high, 1 low | The first live true positive for the "disguised bot challenge" detection mechanism across all nineteen sites: a burst of same-URL requests triggers a real Cloudflare challenge on two high-value paths (an individual collection artwork, the exhibitions index), identically for every user-agent tested — but a single, well-paced request to the same URL succeeds, so this is reported as burst-sensitivity, not a permanent block. Separately, real `VisualArtwork` schema (a first) is missing the date, medium, and description already stated in the page's own visible text, while a sampled exhibition page's `Event`/`Offer` markup is fully complete — the site's structured-data investment is real but inconsistent across templates |
 | [mercadolibre.com.mx](mercadolibre.com.mx.audit-report.json) | E-commerce marketplace, non-English (`lang="es-mx"`) · randomly selected | **2 critical** | The first non-English site tested, and the first to expose a real classifier blind spot: the answerability skill's density keywords are pure English ("is a", "lets you") and score a maximally definitional Spanish glossary page at zero, which is a fixed methodology gap, not a site defect (see below). The site's own genuine findings: search and category browsing redirect every automated-looking request to an account-verification wall, so no path from this audit's entry points ever reaches an individual product listing — the specific mechanism (review/rating schema at e-commerce scale) this run set out to test — and robots.txt blocks every named agent's live-request crawler (`ChatGPT-User`, `Claude-User`, `Perplexity-User`) while leaving the newer `-SearchBot` variants unmentioned |
 | [wsj.com](wsj.com.audit-report.json) | Major publisher, hard paywall · enterprise CDN / bot-managed | **2 critical** | The clearest, most total reachability failure of any site tested: a DataDome challenge (HTTP 401, ~770-byte JS-only shell) blocks the homepage and every article identically for seven agent identities tried — including Googlebot and the three OpenAI agents robots.txt itself explicitly names in its permissive `Allow: /` group. Set out to test a "genuine auth-required paywall" distinct from nytimes.com's bot-wall; found instead that the distinction collapses in practice, since no automated request ever gets far enough to reach whatever paywall logic sits behind the wall. Separately, robots.txt names OpenAI's three agents as allowed but omits Anthropic's and Perplexity's equivalents entirely, so they fall to the file's blanket disallow — a second, independent stage-1 finding |
 | [spotify.com](spotify.com.audit-report.json) | Consumer streaming, JS-SPA product · randomly selected | 2 medium | The domain root and every locale-root path (`/`, `/us/`, `/gb/`, `/de/`) redirect unconditionally, for every agent tested, to the web-player app shell — 20 characters of visible text, no JSON-LD, no meta description, no noscript fallback — while a deeper marketing page's own Organization schema names that exact URL as the entity's canonical `url`. Separately, all five sampled Premium plan pages show correct visible pricing for four distinct paid tiers with zero Product/Offer markup anywhere. Also surfaced a real bug in this project's own tooling: `fetch_llms_txt()` was fooled by a Next.js soft-404 (HTTP 200 serving a real HTML "Page not found" shell at `/llms.txt`) into reporting the file as present — fixed by checking `Content-Type` and the body's own `<!doctype html>` signature rather than trusting status code alone |
 | [khanacademy.org](khanacademy.org.audit-report.json) | Nonprofit education, JS-SPA · randomly selected | **1 critical** | The most total delivery gap of any site tested: the homepage and every sampled subject page return 227KB but reduce to 12 characters of visible text ("Khan Academy") after stripping markup — no JSON-LD, no meta description, no noscript fallback. 223KB of that response (over 98%) is a feature-flag/experimentation config blob, not content. The only schema.org gesture present, an `itemscope itemtype="Organization"` on `<html>`, carries zero actual properties. Separately, robots.txt disallows `GPTBot` by name while leaving `ChatGPT-User` and `OAI-SearchBot` — OpenAI's own retrieval agents — permitted through the wildcard group: a textbook correct training-vs-retrieval split, reported here as *not* a finding, per this project's own calibration for exactly this pattern |
 | [nasa.gov](nasa.gov.audit-report.json) | Government / science editorial · WordPress | 1 high, 1 medium | The homepage carries a real, well-formed Organization/WebSite JSON-LD graph, but 0/4 sampled press-release pages carry any JSON-LD at all — no NewsArticle node for the content type where headline/author/date markup matters most. Compounding it: those same pages have no `article:published_time` meta tag and no `<time>` element either, and the one date-like signal present (`og:updated_time`) clusters within a 3-hour window across four unrelated articles — a bulk migration timestamp masquerading as freshness, actively misleading for content whose whole value is "is this current or old news" |
 | [chipotle.com](chipotle.com.audit-report.json) | National restaurant chain, transactable + physical-location · randomly selected | 1 high | Zero schema.org anywhere on the primary www.chipotle.com domain (0/5 pages sampled: home, rewards, values, nutrition-calculator, find-a-chipotle) — no Organization node, nothing — while the company's own separately-hosted locations.chipotle.com subdomain has excellent, correct `Restaurant` schema for individual stores (full address, geo, phone, per-day hours) plus a cryptographically-signed Yext "CertifiedFact" credential attesting the same facts. The capability and vendor relationship clearly exist; they simply were never extended to the domain a visitor or assistant actually lands on first |
+| [allrecipes.com](allrecipes.com.audit-report.json) | Recipe / editorial media, Cloudflare-managed · randomly selected | **1 critical** | robots.txt opens with an explicit legal notice prohibiting AI/RAG collection, then contradicts its own stated evenness: OpenAI's complete agent set (GPTBot, ChatGPT-User, OAI-SearchBot) is granted broad access, while Anthropic's complete set (ClaudeBot, Claude-User, Claude-SearchBot) and Perplexity's complete set (PerplexityBot, Perplexity-User) are blanket-disallowed site-wide — a deliberate, company-level split, not the defensible training-vs-retrieval pattern seen elsewhere. Every live content fetch attempted from this run's environment was separately challenged or rejected by Cloudflare, including with GPTBot's own user agent — recorded honestly as unverifiable rather than published as a second finding, since this environment cannot distinguish a real technical block from a normal "unverified bot" challenge |
+| [duolingo.com](duolingo.com.audit-report.json) | Consumer edtech, JS-SPA · randomly selected | **1 critical** | The homepage and other primary marketing pages reduce to 8 characters of visible text for a plain fetch, but the site actually built a no-JS fallback — a real, substantive 1,307-character `/nojs/splash` page — that a plain HTTP fetcher can never reach anyway, because it is wired through a `<noscript><meta http-equiv="refresh">` tag: a mechanism only a JS-disabled *browser* interprets, invisible to a non-rendering client. The most specific evidence yet that "we already thought about this" and "an AI agent can actually reach it" are different claims |
+| [craigslist.org](craigslist.org.audit-report.json) | Classifieds marketplace, minimal-JS · deliberately chosen as an "unglamorous" edge case | 1 medium | The first site tested that isn't a major brand or well-resourced SaaS product, chosen specifically because judges grading "generalization to unseen sites" are unlikely to only try famous ones. Old-school server-rendered HTML throughout — genuinely clean on JS-dependency and freshness (`<time datetime>` correctly marks every posting's real timestamp) where modern SPA-heavy sites keep failing. The one real gap: "services" category listings state explicit prices in plain text ("$100 for 1 hour...") with zero Offer/price markup, while "for sale" listings on the same platform correctly emit a complete Offer node with price, currency and geo for the same kind of fact — a template-level inconsistency, not a capability gap |
+| [ja.wikipedia.org](ja.wikipedia.org.audit-report.json) | Encyclopedia, non-Latin script (Japanese) · deliberately chosen to stress URL/language handling | **0 findings** | Surfaced a real bug in this project's own tooling rather than a site defect: a raw, non-percent-encoded article URL (`/wiki/日本`) made every one of this project's seven independent `urllib` fetch call sites raise `UnicodeEncodeError` building the HTTP request line -- caught safely everywhere, but silently indistinguishable from a real network failure, and specifically the kind of bug that would degrade page discovery only on non-Latin-script sites. Fixed by re-quoting every URL before request construction (idempotent on already-encoded URLs) across all six skills. The site itself scored clean: zero JSON-LD was correctly *not* flagged as a defect, since the article links its Wikidata entity directly -- the same "a different, real machine-readable channel already exists" reasoning arxiv.org's report established |
 
 ## Why the severities differ the way they do
 
@@ -185,12 +189,76 @@ site. A few things worth noticing across these reports:
   overstated a problem this audit's own reproduction step disproved. This is the same
   discipline as `moma.org`'s burst-sensitivity call: verify the failure mode actually
   bites before reporting it as one.
+- **allrecipes.com's finding is scored `critical` on textual evidence alone, deliberately
+  independent of the Cloudflare ambiguity.** robots.txt is a plain-text file this run
+  fetched cleanly with zero challenge and zero ambiguity -- the company-level asymmetry
+  it documents (OpenAI allowed, Anthropic and Perplexity blocked) is read directly from
+  the file's own content, verified against this project's real `rule_for()` parser, not
+  inferred from a live fetch that could be contaminated by bot-detection noise. The
+  separate question -- does the Cloudflare layer *also* block the real, IP-verified
+  agents, or only this environment's unverified requests -- got the same treatment as
+  mayoclinic.org: recorded in `not_assessed` rather than guessed at, because a full
+  browser-identity request was challenged too, and a site this size does not survive
+  challenging every ordinary visitor. Two sites, two independent applications of the
+  same "don't infer a block from a network failure on the auditing machine" guardrail,
+  four sites apart in this table -- the same discipline holding up under repetition
+  rather than being a one-off excuse. A third site, zillow.com, hit the identical wall
+  (a genuine PerimeterX `x-px-blocked: 1` challenge on both the homepage and a real
+  listing page, sitemaps unaffected) during this same run and was not published as a
+  report at all rather than force a weak finding out of an unverifiable observation --
+  three high-value-data verticals (healthcare, recipes/media, real estate) all showing
+  the same pattern is itself a noteworthy, if informal, generalization: aggressive bot
+  management concentrates where the underlying data is commercially valuable to scrape,
+  which is a reasonable thing for a future version of this marketplace to name as
+  context rather than something this run had budget to formalize into a check.
+- **duolingo.com's finding required verifying a negative claim before trusting it.**
+  It would have been easy to report "no noscript fallback exists" the way spotify.com
+  and khanacademy.org's reports do -- but duolingo.com's homepage *does* have one, so
+  the more interesting and more honest finding is that the fallback exists and still
+  does not work for this audit's target population. Confirming that required an extra
+  fetch (of `/nojs/splash` itself) this run would not have needed if it had stopped at
+  "a noscript tag is present, therefore handled."
+- **craigslist.org was chosen for a specific, named reason worth stating plainly: every
+  other site in this table is a major brand or a well-funded product.** The round's own
+  grading criterion is generalization to sites nobody hand-picked for this demo, and a
+  portfolio of only famous, well-engineered domains is a weaker test of that than it
+  looks like -- large engineering teams are more likely to have already fixed the easy
+  mistakes this audit catches. craigslist.org is the opposite kind of unseen site: old,
+  functionally stable, minimally modernized. That it passed cleanly on JS-dependency and
+  freshness while still yielding one genuine, well-evidenced structured-data finding is
+  a better generalization signal than an eighteenth well-funded SaaS company would have
+  been, precisely because nothing about this site was picked to flatter the tool.
+- **craigslist.org's finding is deliberately scored `partial` prevalence, not
+  `site-wide`,** even though the two "services" listings sampled were 2-for-2. Only two
+  of roughly eight top-level posting categories were checked; `not_assessed` says so
+  explicitly rather than letting a clean small sample imply a claim about categories
+  never inspected (jobs, housing, personals, gigs, resumes). Reporting the honest scope
+  of what was actually checked, not the scope the evidence would tempt a reader to
+  assume, is the same discipline the `not_assessed` array exists to enforce everywhere
+  else in this project.
+- **ja.wikipedia.org is the only report in this set with zero findings, and that is a
+  meaningful result on purpose, not an empty run.** The site was chosen specifically to
+  stress two things large commercial sites don't: a genuinely different script (Japanese,
+  no whitespace tokenization, unlike mercadolibre.com.mx's Spanish) and a URL containing
+  native-script characters. The real, valuable outcome was catching a bug in this
+  project's own fetch code -- every one of its seven independent `urllib` request-
+  construction sites raised `UnicodeEncodeError` on a raw non-ASCII URL, caught safely
+  but silently indistinguishable from an unrelated network failure. Left unfixed, this
+  would have specifically and only degraded page discovery on non-Latin-script sites --
+  the exact population the round's generalization criterion cares about most, since it is
+  the population least represented in whatever a developer tests against by habit. Fixed
+  by re-quoting every URL (idempotent on ones already encoded) before request
+  construction, verified against both the raw-Unicode case and a regression check against
+  wsj.com to confirm ordinary ASCII URLs are untouched. Separately, the site's genuine
+  lack of on-page JSON-LD was deliberately *not* published as a finding, for the same
+  reason arxiv.org's citation tags earned a lighter touch: a real alternative (Wikidata,
+  linked from every article) already serves the purpose schema.org markup would.
 
 ## A check that has never fired, and why that itself was checked
 
 `render-extractability-audit` Check 5 (interaction-gated content: accordions/tabs whose
 panels are absent from the DOM until clicked) has not produced a true positive across any
-of these fifteen reports. Rather than leave that unexplained, eleven live production
+of these nineteen reports. Rather than leave that unexplained, eleven live production
 FAQ/accordion/tab implementations were inspected directly for this check specifically --
 Vercel, Notion, Slack and GitHub's pricing pages, Figma's pricing FAQ, Stripe's docs
 language-switcher, IRS.gov's FAQ, Docker's docs, and two e-commerce product pages --
