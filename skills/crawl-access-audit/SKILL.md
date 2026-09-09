@@ -77,6 +77,76 @@ rather than flagged.
 **Severity inputs.** stage 1 · prevalence from the fraction of sampled paths disallowed ·
 criticality `core` when the homepage or primary offering pages are covered.
 
+### Check 1b — Duplicate or self-contradictory agent groups
+
+**Applies:** always. `scripts/check_access.py`'s `parse_robots()` reports this
+structurally as `robots.duplicate_agent_groups` — a non-empty list means this check has
+something to report, without needing to re-derive it by hand from the raw file.
+
+**Procedure.** Check whether any single agent name is declared as its own `User-agent`
+group more than once, non-contiguously, in the file. This is different from Check 1: that
+check asks *which* agents are blocked; this one asks whether the file even has one
+well-defined answer to that question for a given agent.
+
+**Flag when.** `duplicate_agent_groups` is non-empty **and** the rule sets attached to
+the repeated groups materially disagree (e.g. one occurrence carries `Allow` exceptions
+the other lacks, or the two disagree on `/`). Confirmed live on nba.com: `GPTBot` and
+`Google-Extended` are each declared twice, one occurrence permissive with nine `Allow`
+exceptions, the other a bare `Disallow: /`.
+
+**Do not flag when.** The repeated declarations are identical (a harmless, if untidy,
+copy-paste with no ambiguity), or the agent is repeated only as consecutive `User-agent`
+lines sharing one group (not a defect — that is how one rule set is meant to apply to
+several agents at once, and `parse_robots()` does not count it as a duplicate).
+
+**Why this is not the same as Check 1's "which agents are blocked."** The robots.txt spec
+does not define behavior for repeated groups naming the same agent, and real-world
+parsers disagree — some honor only the first group for an agent, some only the last, some
+merge every rule encountered (this project's own parser merges, a defensible but not
+uniquely correct choice). A file with this defect does not have one policy for the
+affected agent; it has as many policies as there are plausible parsers, which is a more
+fundamental problem than any single interpretation of it being wrong.
+
+**Evidence format.**
+`GPTBot is declared as a separate group twice: lines 12-13 attach nine Allow exceptions covering standings, schedule and player pages, but lines 58-59 attach only "Disallow: /" with none. A crawler that only honors the last group for a repeated agent would see a blanket block; one that merges, as this audit's own parser does, would see broad access. The file does not have one answer.`
+
+**Severity inputs.** stage 1 · prevalence `isolated` unless several agents are affected ·
+criticality `core`, since the ambiguity affects whether the entity's core content is
+reachable at all for the agent in question, not a peripheral path.
+
+### Check 1c — robots.txt served with a non-2xx status
+
+**Applies:** always. `scripts/check_access.py` reports this structurally as
+`robots.served_with_status` — non-`null` means this check has something to report.
+
+**Procedure.** Fetch `/robots.txt` and note its HTTP status, independently of whether the
+body parses into real directives. A response with a real, parseable body (the script's
+own `body_looks_real` test: it contains a `User-agent:` line) served under any status
+other than 200 is the concern here, most notably any 4xx.
+
+**Flag when.** robots.txt returns a non-2xx status (429 aside — that means "back off",
+not "unavailable") while its body contains genuine directives. Confirmed live on
+stackoverflow.com: HTTP 418 carrying `Disallow: /` and `Content-signal: search=no,
+ai-train=no` for the whole site.
+
+**Why this matters more than it looks.** Per Google's documented crawler behavior, and
+the convention most major crawlers follow, a 4xx status on robots.txt (other than 429) is
+treated as "the file is unavailable" — which means an *unrestricted* crawl, not a
+restricted one. A site whose robots.txt is maximally restrictive in content but served
+under the wrong status code may have a policy that is, in practice, enforced by nobody.
+This is the inverse of every other finding in this check: the site is not accidentally
+too permissive, it is accidentally not enforcing its own maximally restrictive intent.
+
+**Do not flag when.** The status is a genuine redirect that resolves to a 200 (follow it
+first), or the body is empty/junk (that is Check 1's absence case, not this one), or the
+status is 429 (rate-limiting, not unavailability).
+
+**Evidence format.**
+`robots.txt returns HTTP 418 with a real body: "User-agent: * / Content-signal: search=no, ai-train=no / Disallow: /". Per documented crawler behavior, a non-2xx status other than 429 is treated as "robots.txt unavailable" by major crawlers, meaning this maximally restrictive policy is likely not being enforced by any of the agents it names.`
+
+**Severity inputs.** stage 1 · prevalence `site-wide` (the status affects the whole
+file, hence every path) · criticality `core`.
+
 ### Check 2 — Bot-versus-browser response parity
 
 **Applies:** always. This is the highest-value check in the marketplace.

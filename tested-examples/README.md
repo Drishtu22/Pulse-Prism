@@ -1,7 +1,7 @@
 # Example audit reports
 
-These are nineteen **real, live audit runs** — not fabricated or hand-edited — produced by
-actually invoking `audit-orchestrator` against nineteen unseen, unrelated public websites
+These are twenty-five **real, live audit runs** — not fabricated or hand-edited — produced by
+actually invoking `audit-orchestrator` against twenty-five unseen, unrelated public websites
 chosen to span different CMS platforms and content patterns. Each finding was
 independently verified against the live site (direct fetches, DOM inspection, or a
 second confirming request) before being written into the report; nothing here is a
@@ -23,7 +23,7 @@ schema-valid against `skills/audit-orchestrator/references/report-schema.json`.
 | [linear.app](linear.app.audit-report.json) | Modern SaaS · JS-framework marketing site | 1 high, 1 low | Zero schema.org anywhere despite excellent, complete Open Graph/Twitter Card coverage on every page — the first live case distinguishing "invested in the wrong depth of markup" from the other reports' "invested in nothing." Also the first site whose `<time>` elements are present but missing their `datetime` attribute |
 | [techcrunch.com](techcrunch.com.audit-report.json) | Major publisher · WordPress VIP | 2 low | Excellent core `Event` markup (correct dates, `EventScheduled`, full `PostalAddress`) for a real, ticketed conference — but its sponsor list is 76 entries deep and every single one is a hollow `{"name": ""}`. Also the first WordPress site tested, and the first robots.txt that doesn't cleanly fit either "blocks everything" or "blocks only training" — it disallows one OpenAI retrieval agent while leaving another unmentioned |
 | [airbnb.com](airbnb.com.audit-report.json) | Global marketplace · randomly selected | **2 critical** | Every page on the domain — homepage, listings, everything — serves only a JavaScript-triggered form-POST redirect stub to a non-executing fetcher; confirmed a real headless browser completes it fine, so this is a pure delivery gap, not a technical wall. Independently, robots.txt disallows `PerplexityBot` — and only `PerplexityBot` — from every listing, while Perplexity's own second agent stays permitted. The two findings are unrelated root causes with disjoint scopes, which is itself what this run's fix (below) is about |
-| [moma.org](moma.org.audit-report.json) | Museum / cultural institution · randomly selected | 1 high, 1 low | The first live true positive for the "disguised bot challenge" detection mechanism across all nineteen sites: a burst of same-URL requests triggers a real Cloudflare challenge on two high-value paths (an individual collection artwork, the exhibitions index), identically for every user-agent tested — but a single, well-paced request to the same URL succeeds, so this is reported as burst-sensitivity, not a permanent block. Separately, real `VisualArtwork` schema (a first) is missing the date, medium, and description already stated in the page's own visible text, while a sampled exhibition page's `Event`/`Offer` markup is fully complete — the site's structured-data investment is real but inconsistent across templates |
+| [moma.org](moma.org.audit-report.json) | Museum / cultural institution · randomly selected | 1 high, 1 low | The first live true positive for the "disguised bot challenge" detection mechanism across all twenty-five sites: a burst of same-URL requests triggers a real Cloudflare challenge on two high-value paths (an individual collection artwork, the exhibitions index), identically for every user-agent tested — but a single, well-paced request to the same URL succeeds, so this is reported as burst-sensitivity, not a permanent block. Separately, real `VisualArtwork` schema (a first) is missing the date, medium, and description already stated in the page's own visible text, while a sampled exhibition page's `Event`/`Offer` markup is fully complete — the site's structured-data investment is real but inconsistent across templates |
 | [mercadolibre.com.mx](mercadolibre.com.mx.audit-report.json) | E-commerce marketplace, non-English (`lang="es-mx"`) · randomly selected | **2 critical** | The first non-English site tested, and the first to expose a real classifier blind spot: the answerability skill's density keywords are pure English ("is a", "lets you") and score a maximally definitional Spanish glossary page at zero, which is a fixed methodology gap, not a site defect (see below). The site's own genuine findings: search and category browsing redirect every automated-looking request to an account-verification wall, so no path from this audit's entry points ever reaches an individual product listing — the specific mechanism (review/rating schema at e-commerce scale) this run set out to test — and robots.txt blocks every named agent's live-request crawler (`ChatGPT-User`, `Claude-User`, `Perplexity-User`) while leaving the newer `-SearchBot` variants unmentioned |
 | [wsj.com](wsj.com.audit-report.json) | Major publisher, hard paywall · enterprise CDN / bot-managed | **2 critical** | The clearest, most total reachability failure of any site tested: a DataDome challenge (HTTP 401, ~770-byte JS-only shell) blocks the homepage and every article identically for seven agent identities tried — including Googlebot and the three OpenAI agents robots.txt itself explicitly names in its permissive `Allow: /` group. Set out to test a "genuine auth-required paywall" distinct from nytimes.com's bot-wall; found instead that the distinction collapses in practice, since no automated request ever gets far enough to reach whatever paywall logic sits behind the wall. Separately, robots.txt names OpenAI's three agents as allowed but omits Anthropic's and Perplexity's equivalents entirely, so they fall to the file's blanket disallow — a second, independent stage-1 finding |
 | [spotify.com](spotify.com.audit-report.json) | Consumer streaming, JS-SPA product · randomly selected | 2 medium | The domain root and every locale-root path (`/`, `/us/`, `/gb/`, `/de/`) redirect unconditionally, for every agent tested, to the web-player app shell — 20 characters of visible text, no JSON-LD, no meta description, no noscript fallback — while a deeper marketing page's own Organization schema names that exact URL as the entity's canonical `url`. Separately, all five sampled Premium plan pages show correct visible pricing for four distinct paid tiers with zero Product/Offer markup anywhere. Also surfaced a real bug in this project's own tooling: `fetch_llms_txt()` was fooled by a Next.js soft-404 (HTTP 200 serving a real HTML "Page not found" shell at `/llms.txt`) into reporting the file as present — fixed by checking `Content-Type` and the body's own `<!doctype html>` signature rather than trusting status code alone |
@@ -34,6 +34,12 @@ schema-valid against `skills/audit-orchestrator/references/report-schema.json`.
 | [duolingo.com](duolingo.com.audit-report.json) | Consumer edtech, JS-SPA · randomly selected | **1 critical** | The homepage and other primary marketing pages reduce to 8 characters of visible text for a plain fetch, but the site actually built a no-JS fallback — a real, substantive 1,307-character `/nojs/splash` page — that a plain HTTP fetcher can never reach anyway, because it is wired through a `<noscript><meta http-equiv="refresh">` tag: a mechanism only a JS-disabled *browser* interprets, invisible to a non-rendering client. The most specific evidence yet that "we already thought about this" and "an AI agent can actually reach it" are different claims |
 | [craigslist.org](craigslist.org.audit-report.json) | Classifieds marketplace, minimal-JS · deliberately chosen as an "unglamorous" edge case | 1 medium | The first site tested that isn't a major brand or well-resourced SaaS product, chosen specifically because judges grading "generalization to unseen sites" are unlikely to only try famous ones. Old-school server-rendered HTML throughout — genuinely clean on JS-dependency and freshness (`<time datetime>` correctly marks every posting's real timestamp) where modern SPA-heavy sites keep failing. The one real gap: "services" category listings state explicit prices in plain text ("$100 for 1 hour...") with zero Offer/price markup, while "for sale" listings on the same platform correctly emit a complete Offer node with price, currency and geo for the same kind of fact — a template-level inconsistency, not a capability gap |
 | [ja.wikipedia.org](ja.wikipedia.org.audit-report.json) | Encyclopedia, non-Latin script (Japanese) · deliberately chosen to stress URL/language handling | **0 findings** | Surfaced a real bug in this project's own tooling rather than a site defect: a raw, non-percent-encoded article URL (`/wiki/日本`) made every one of this project's seven independent `urllib` fetch call sites raise `UnicodeEncodeError` building the HTTP request line -- caught safely everywhere, but silently indistinguishable from a real network failure, and specifically the kind of bug that would degrade page discovery only on non-Latin-script sites. Fixed by re-quoting every URL before request construction (idempotent on already-encoded URLs) across all six skills. The site itself scored clean: zero JSON-LD was correctly *not* flagged as a defect, since the article links its Wikidata entity directly -- the same "a different, real machine-readable channel already exists" reasoning arxiv.org's report established |
+| [ar.wikipedia.org](ar.wikipedia.org.audit-report.json) | Encyclopedia, right-to-left script (Arabic) · deliberately chosen to confirm the URL fix generalizes | **0 findings** | A regression check, not a bug hunt: confirmed the non-ASCII URL fix from the ja.wikipedia.org run also handles Arabic script (a different Unicode block, and RTL reading direction) without incident -- `/wiki/اليابان` fetches cleanly, `dir="rtl"` and `lang="ar"` are both correctly present. Also checked roughly a dozen real sites for legacy non-UTF-8 charsets (Shift_JIS, GBK, EUC-KR), a second plausible encoding edge case -- found none still in the wild among the ones reachable from this environment, an honest negative result rather than a forced finding |
+| [nba.com](nba.com.audit-report.json) | Sports league, editorial + stats · randomly selected | **1 critical**, 1 medium | The first robots.txt found with genuinely self-contradictory rules: `GPTBot` and `Google-Extended` are each declared as a *separate group twice*, with materially different rule sets (one permissive with nine Allow exceptions, one a bare blanket disallow) -- a real defect, since different real-world parsers resolve duplicate groups differently and the site cannot currently know what its own file communicates. Separately, and independently: `OAI-SearchBot` gets unconditional `Allow: /`, while OpenAI's *own* `ChatGPT-User` and Perplexity's equivalent `PerplexityBot` are both fully disallowed with zero exceptions -- an asymmetry inside a single company's agent family, not just between competitors |
+| [medium.com](medium.com.audit-report.json) | Blogging / publishing platform, user-generated content · randomly selected | **0 findings** | A clean report on every dimension checked, not an unexamined one: robots.txt names essentially every major training-corpus agent (`ClaudeBot`, `GPTBot`, `Bytespider`, `meta-externalagent`, `Applebot-Extended`) while naming zero retrieval-class agents, which fall through to a genuinely permissive wildcard -- the most complete, best-executed "coherent choice" in this table. Every one of five sampled articles carried a complete `SocialMediaPosting` JSON-LD node with distinct, plausible per-article `datePublished`/`dateModified` timestamps (no bulk-migration artifact). One article briefly returned a 403 with full real content readable underneath it -- re-fetched twice before concluding anything, both retries came back a clean 200, so it was reported as the transient blip it was, not a defect |
+| [stackoverflow.com](stackoverflow.com.audit-report.json) | Technical Q&A, threaded UGC · deliberately chosen as structurally out-of-domain | **1 critical** | The inverse of every other robots.txt finding in this table: the site *wants* to be maximally restrictive -- `Disallow: /` and the newer `Content-signal: search=no, ai-train=no` directive, for every agent -- but the file is served under HTTP 418 ("I'm a teapot"), not 200. Per documented crawler behavior, a non-2xx status on robots.txt (429 aside) is treated as "unavailable," which licenses unrestricted crawling rather than enforcing the stated block. Surfaced a real gap in this project's own tooling: `check_access.py` was discarding any robots.txt body that didn't arrive with exactly a 200 status, silently treating a real, parseable policy as if it didn't exist |
+| [archive.org](archive.org.audit-report.json) | Digital library / archive, nonprofit · deliberately chosen for scale and mission | 2 medium | The domain root delivers 202 characters of text and an explicit "Javascript is required for this site" notice with no fallback -- but this is narrow, not systemic: sampled item pages under `/details/` render full, substantial content (5,000+ characters) with no JavaScript dependency at all, so only the entry point is affected, not the archive itself. The more consequential finding is on those same item pages: real, complete metadata (title, creator, publication date, description) is already displayed in visible text and already exists in the platform's own `/metadata/<identifier>` API, yet the page's only JSON-LD is a generic `BreadcrumbList` naming nothing about the item itself |
+| [npr.org](npr.org.audit-report.json) | Major publisher, nonprofit-adjacent · final site tested | **1 critical** | robots.txt clearly intends a comprehensive, symmetric block of every major AI operator -- OpenAI's, Google's, Meta's, Common Crawl's, Cohere's and ByteDance's tokens are all current and correctly spelled -- but names the *retired* Anthropic token `Claude-Web` instead of the current `Claude-User`/`Claude-SearchBot`, and misspells Perplexity's as `PerplexityUser` instead of `Perplexity-User` (while `PerplexityBot` right next to it is spelled correctly). Verified precisely with this project's own parser: both companies' actual current agents resolve `allowed`, silently defeating a policy the file otherwise enforces comprehensively -- a staleness/typo failure mode distinct from every other robots.txt finding in this table |
 
 ## Why the severities differ the way they do
 
@@ -253,12 +259,133 @@ site. A few things worth noticing across these reports:
   lack of on-page JSON-LD was deliberately *not* published as a finding, for the same
   reason arxiv.org's citation tags earned a lighter touch: a real alternative (Wikidata,
   linked from every article) already serves the purpose schema.org markup would.
+- **ar.wikipedia.org is a deliberate regression check, and reports two negative results
+  honestly rather than manufacturing findings to justify the run.** First: the
+  non-ASCII URL fix generalizes beyond the CJK case it was found on -- Arabic uses a
+  completely different Unicode block and reads right-to-left, and `/wiki/اليابان`
+  fetches without incident, with `dir="rtl"` correctly present. Second: roughly a dozen
+  real sites (Japanese, Chinese, and Japanese-government domains specifically chosen as
+  plausible holdouts) were checked for a different, unrelated encoding risk -- a
+  legacy non-UTF-8 body charset (Shift_JIS, GBK, EUC-KR) that this project's hardcoded
+  `.decode("utf-8", errors="replace")` calls would silently garble rather than error on.
+  None were found; the modern web has moved off legacy charsets more completely than
+  expected. Reporting a clean regression check and a genuine negative result as exactly
+  that, instead of stretching either into a finding, is the same discipline this project
+  applies everywhere: a report with nothing to flag is itself informative when the
+  reasons for looking are stated honestly.
+- **nba.com's duplicate-group finding is a genuinely new failure category, not a
+  restatement of an inconsistency finding seen on another site.** Every other robots.txt
+  inconsistency in this table (wsj.com, mercadolibre.com.mx, allrecipes.com,
+  khanacademy.org) is a single, unambiguous group per agent that simply treats different
+  companies differently -- readable one way by any parser. nba.com's `GPTBot` and
+  `Google-Extended` groups are each declared *twice*, with different rules attached each
+  time, which is not a policy choice at all: it is a file that does not have one single
+  well-defined meaning, verified by checking that this project's own parser had to make
+  a specific, documented choice (merge both groups) to produce any answer, when an
+  equally spec-compliant parser elsewhere could reach the opposite one. Both findings
+  land at their stage's natural severity independently -- the medium-severity duplicate
+  defect is `isolated` prevalence (two agents out of many named in the file) and does
+  not get capped by the critical retrieval-agent finding, since `auto_blockers` only
+  ever suppresses a *later*-stage finding, and both of these sit at stage 1.
+- **nba.com is also a reminder that a transient fetch failure isn't a finding.** One
+  homepage attempt during this run returned no status and an empty body; a same-second
+  retry returned a clean 200 with 131,402 characters of real text and three well-formed
+  JSON-LD blocks. That blip was not written up as a reachability defect, consistent with
+  this skill's own guardrail against inferring a block from a single failed request on
+  the auditing machine -- the same principle applied at the opposite scale from
+  mayoclinic.org's and allrecipes.com's multi-attempt, still-inconclusive walls.
+- **The nba.com duplicate-group finding exposed a real gap in this project's own
+  tooling, since fixed.** `check_access.py`'s `parse_robots()` silently merged every
+  occurrence of a repeated agent name into one combined ruleset with no signal anywhere
+  that the merge had even happened -- the duplication was caught only because this run
+  additionally ran a manual `re.findall` over the raw file as a side-check, something a
+  future audit of a different site would have no reason to do on its own. Fixed by
+  having `parse_robots()` track and return which agents were declared as a separate,
+  non-contiguous group more than once (`duplicate_agent_groups`), verified against
+  nba.com's real file (correctly flags `gptbot` and `google-extended`) and against
+  three previously-audited sites' robots.txt files (eff.org, mercadolibre.com.mx,
+  khanacademy.org -- all correctly return an empty list, no false positives). Documented
+  as its own check (crawl-access-audit's Check 1b) so the next site with this defect is
+  caught by the check itself, not by however thoroughly a particular run happened to
+  look.
+- **medium.com is the cleanest report in this table, and it earned that by surviving
+  three separate opportunities to manufacture a finding that would not have held up.**
+  A first look at the robots.txt training-agent block could have been misread as a
+  discoverability problem; checking which specific agents were named (all
+  training-corpus, zero retrieval) confirmed it as the coherent, approvable pattern
+  documented for khanacademy.org instead. A first fetch of one article returned 403 with
+  full content underneath -- exactly the "sneaky non-200" shape this project's checks
+  are built to catch -- but two clean re-fetches showed it was a one-off blip, not the
+  site's real behavior. And `SocialMediaPosting` (rather than `Article` or
+  `BlogPosting`) looked like a plausible type mismatch on first read, until schema.org's
+  own definition of that type turned out to explicitly include blog posts, closing off
+  what would have been a manufactured, technically wrong finding. Zero findings from a
+  run that worked this hard to find one is a stronger generalization signal than a
+  report with a defect in it.
+- **stackoverflow.com exposed a second real gap in this project's own tooling, since
+  fixed, and it is the more consequential of the two robots.txt-parsing bugs found this
+  campaign.** `check_access.py`'s decision to treat robots.txt as present required an
+  exact HTTP 200; stackoverflow.com's file arrives as HTTP 418 with a completely real,
+  parseable body underneath. Before the fix, this project's own audit would have
+  reported "no robots.txt, all paths permitted" for a site whose actual, explicit
+  written policy is the opposite of permitted -- missing not just the parse but the
+  single most interesting fact available: that the site's own maximally restrictive
+  intent is likely unenforced for the same reason this project's tool almost missed it.
+  Fixed by parsing the body whenever it contains a real `User-agent:` line regardless of
+  status, and surfacing the non-200 status as `robots.served_with_status` plus an
+  explanatory note. Verified against five previously-good sites (no false positives --
+  all still resolve status 200 normally) and against three known large HTML bodies
+  (spotify.com, khanacademy.org and duolingo.com's `/llms.txt` soft-404 shells) to
+  confirm the `User-agent:` detection heuristic does not false-positive on unrelated
+  JavaScript or analytics code that happens to mention "user agent" in a different
+  context. Documented as crawl-access-audit's Check 1c.
+- **Choosing stackoverflow.com specifically for being structurally unlike every other
+  site in this table earned its keep twice over.** It was picked to stress a genuinely
+  different content shape (threaded Q&A, `QAPage`-family schema, no products or
+  locations or news articles) -- and instead of testing that shape directly, it
+  surfaced a tooling gap that had been sitting latent through the previous twenty-two
+  audits, invisible until a site happened to combine a real, restrictive robots.txt
+  with a non-standard status code. That combination did not occur naturally in this
+  campaign's other twenty-two sites; picking a deliberately out-of-domain site was a
+  materially different search than picking another well-known brand, and found a
+  materially different kind of gap because of it.
+- **archive.org's two findings are deliberately not conflated into one, even though
+  both are about missing information at different points in the same visit.** The
+  homepage gap (stage 2, `isolated` prevalence) and the item-page schema gap (stage 4,
+  `widespread` prevalence) have different root causes, different owners, and different
+  fixes -- one is a rendering/delivery problem at a single entry point, the other is a
+  markup-authoring gap across the platform's actual content at scale. Neither auto-
+  blocks the other (`auto_blockers` only fires for a stage-1 critical, and neither
+  finding here is stage 1), which is correct: fixing the homepage would not touch the
+  item-page schema gap, and vice versa. Both land at `medium`, appropriately -- the
+  homepage gap is real but narrow (confirmed live: item pages, the actual content,
+  render fine without JavaScript), and the item-page gap is widespread but the
+  underlying facts are still reachable as plain text, just not machine-readable -- a
+  materially less severe situation than eff.org's or basecamp.com's structured-data
+  findings, which is why this scored lower than either despite affecting more pages.
+- **npr.org is the final site tested, and its finding is a distinct failure mode from
+  every prior robots.txt case in this table.** khanacademy.org and medium.com show
+  deliberate, coherent training-vs-retrieval splits; wsj.com and allrecipes.com show
+  one company favored over others; nba.com shows internally contradictory duplicate
+  groups; stackoverflow.com shows a correct policy undermined by the wrong HTTP status.
+  npr.org intends none of that -- its policy is the simplest and most symmetric of any
+  site tested, every major operator blocked the same way -- and still fails, because
+  two of its sixteen agent entries name a token that operator no longer uses
+  (`Claude-Web`) or never used (`PerplexityUser`). Confirmed precisely against this
+  project's own parser rather than assumed from reading the file: `Claude-User`,
+  `Claude-SearchBot` and `Perplexity-User` all resolve `allowed`, while the file's own
+  correctly-spelled `PerplexityBot` two lines below the misspelled entry proves the
+  intent was never in question, only the execution. producthunt.com was also attempted
+  in this final round and correctly not published: a genuine, reproducible Cloudflare
+  "Just a moment..." challenge blocked even robots.txt itself across two attempts eight
+  seconds apart, the same unverifiable-from-here pattern as kickstarter.com,
+  mayoclinic.org, allrecipes.com and zillow.com before it.
 
 ## A check that has never fired, and why that itself was checked
 
 `render-extractability-audit` Check 5 (interaction-gated content: accordions/tabs whose
 panels are absent from the DOM until clicked) has not produced a true positive across any
-of these nineteen reports. Rather than leave that unexplained, eleven live production
+of these twenty-five reports. Rather than leave that unexplained, eleven live production
 FAQ/accordion/tab implementations were inspected directly for this check specifically --
 Vercel, Notion, Slack and GitHub's pricing pages, Figma's pricing FAQ, Stripe's docs
 language-switcher, IRS.gov's FAQ, Docker's docs, and two e-commerce product pages --

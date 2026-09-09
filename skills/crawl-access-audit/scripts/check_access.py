@@ -206,7 +206,8 @@ def soft_block_signals(obs):
 
 
 def parse_robots(text):
-    """Parse robots.txt into {agent_lower: {"allow": [...], "disallow": [...]}} plus sitemaps.
+    """Parse robots.txt into {agent_lower: {"allow": [...], "disallow": [...]}} plus
+    sitemaps, plus a list of agents declared as a separate group more than once.
 
     Deliberately simple and explicit rather than using urllib.robotparser, because the
     audit needs to report *which lines* produced a rule, not just whether a fetch is
@@ -217,6 +218,15 @@ def parse_robots(text):
     # *after* a rule line begins a new group. Without this flag every group in the file
     # merges into one and per-agent verdicts become meaningless.
     last_was_rule = False
+    # An agent named in two separate, non-contiguous groups is a real, distinct defect
+    # -- confirmed live on nba.com, whose GPTBot group appears once with nine Allow
+    # exceptions and again, later in the same file, as a bare "Disallow: /". The lines
+    # below still merge both groups' rules (one defensible interpretation among several
+    # a real crawler's parser might make), but without tracking this separately, that
+    # merge would silently swallow the fact that the file has no single well-defined
+    # meaning for this agent at all -- the more important observation of the two.
+    started_groups = set()
+    duplicated = set()
     for raw in text.splitlines():
         line = raw.split("#", 1)[0].strip()
         if not line or ":" not in line:
@@ -227,6 +237,10 @@ def parse_robots(text):
             if last_was_rule:
                 current = []
             agent = value.lower()
+            if agent not in current:
+                if agent in started_groups:
+                    duplicated.add(agent)
+                started_groups.add(agent)
             groups.setdefault(agent, {"allow": [], "disallow": []})
             current.append(agent)
             last_was_rule = False
@@ -236,7 +250,7 @@ def parse_robots(text):
             last_was_rule = True
             for agent in current:
                 groups[agent][field].append(value)
-    return groups, sitemaps
+    return groups, sitemaps, sorted(duplicated)
 
 
 def rule_for(groups, agent, path):
@@ -325,15 +339,35 @@ def main():
     # --- robots.txt -------------------------------------------------------------
     robots_obs = fetch(f"{origin}/robots.txt", BROWSER_UA)
     polite_pause()
-    if robots_obs["ok"] and robots_obs["status"] == 200:
-        groups, sitemaps = parse_robots(robots_obs["body"])
+    # A non-2xx status with a real robots.txt body underneath it (confirmed live on
+    # stackoverflow.com: HTTP 418 carrying a genuine "Disallow: /" and
+    # "Content-signal: ai-train=no") is a materially different, and more interesting,
+    # case than a genuinely missing file. Per Google's documented crawler behavior (and
+    # the convention most major crawlers follow), a 4xx status on robots.txt -- 429
+    # aside -- is treated as "robots.txt unavailable", which means an unrestricted
+    # crawl, silently defeating whatever the body actually says. Discarding that body
+    # the same way an empty 404 is discarded would hide the single most useful fact
+    # this check can report: the site's own stated policy is likely not being enforced,
+    # for a reason that has nothing to do with what the policy says.
+    body_looks_real = bool(re.search(r"user-agent\s*:", robots_obs.get("body", ""), re.I))
+    if robots_obs["ok"] and (robots_obs["status"] == 200 or body_looks_real):
+        groups, sitemaps, duplicate_agent_groups = parse_robots(robots_obs["body"])
         out["robots"] = {
             "present": True,
             "raw": robots_obs["body"][:8000],
             "groups": groups,
             "sitemaps": sitemaps,
             "agents_declared": sorted(groups.keys()),
+            "duplicate_agent_groups": duplicate_agent_groups,
+            "served_with_status": None if robots_obs["status"] == 200 else robots_obs["status"],
         }
+        if robots_obs["status"] != 200:
+            out["notes"].append(
+                f"robots.txt was served with HTTP {robots_obs['status']}, not 200, "
+                "despite containing real directives. Most major crawlers treat a "
+                "non-2xx status (other than 429) on robots.txt as 'file unavailable' "
+                "and crawl without restriction, which likely means this file's own "
+                "stated policy is not being enforced by the crawlers it names.")
     else:
         # Keep the shape identical whether or not robots.txt exists. A consumer that has
         # to branch on presence will eventually forget to, and a missing key crashes the
@@ -345,6 +379,8 @@ def main():
             "groups": {},
             "sitemaps": [],
             "agents_declared": [],
+            "duplicate_agent_groups": [],
+            "served_with_status": None,
         }
         out["notes"].append(
             "No robots.txt retrieved; all paths treated as permitted. Absence is not "

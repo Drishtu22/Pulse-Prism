@@ -1,0 +1,47 @@
+{
+  "site": "medium.com",
+  "audited_at": "2026-09-08T19:00:09Z",
+  "audit_scope": {},
+  "summary": {
+    "total_findings": 0,
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0,
+    "stage_scores": {
+      "reachability": 100,
+      "delivery": 100,
+      "textuality": 100,
+      "extractability": 100,
+      "trust": 100,
+      "engagement": 100
+    },
+    "headline": "No findings detected in the audited sample."
+  },
+  "findings": [],
+  "opportunities": [
+    {
+      "title": "Publish an llms.txt, given the platform's underlying markup investment is already thorough",
+      "rationale": "No llms.txt exists (a genuine 404). Every sampled article carried a complete SocialMediaPosting JSON-LD node (headline, dates, full author and publisher graphs), so the underlying capability to describe content in machine-readable terms is clearly already built -- an llms.txt pointing agents at sitemap structure or licensing terms (already declared separately at /license.xml) would be a small, low-cost extension of work already done.",
+      "mechanism": "A short llms.txt naming the platform's own sitemap index and license terms gives a well-behaved agent a documented entry point beyond relying on sitemap discovery alone.",
+      "priority": "low",
+      "steps": [
+        "Add a minimal llms.txt referencing the existing sitemap index and license.xml."
+      ],
+      "effort": "trivial",
+      "id": "O-001"
+    }
+  ],
+  "not_assessed": [
+    {
+      "check": "Answerability, freshness/corroboration, and engagement across a broader sample; structured-data consistency across Medium's other content surfaces (publications, tag pages, member-only/paywalled articles)",
+      "reason": "This run hand-verified robots.txt policy and structured-data completeness on five sampled articles rather than running the full sampled-page probe. Content quality on a user-generated platform is inherently variable per-author; the five samples checked all happened to carry complete markup, which is a real, verified result for those samples but not a claim about the platform's full content diversity.",
+      "impact": "Cannot state a general answerability coverage figure or confirm markup completeness holds for paywalled ('member-only') stories specifically, which this run did not target."
+    },
+    {
+      "check": "On-site engagement -- LCP/CLS/TBT, viewport occlusion (engagement-audit)",
+      "reason": "No headless-browser engine (Playwright/Puppeteer) was available in this run's environment.",
+      "impact": "Cannot assess the actual on-site experience for a JavaScript-executing visitor."
+    }
+  ]
+}
