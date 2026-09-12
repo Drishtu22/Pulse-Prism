@@ -118,7 +118,6 @@ ai-citability-audit/
 ├── marketplace.json
 ├── README.md
 ├── validate_marketplace.py
-├── tested-examples/                  ← sample audit reports from real, live runs
 └── skills/
     ├── audit-orchestrator/          ← entrypoint
     │   ├── SKILL.md

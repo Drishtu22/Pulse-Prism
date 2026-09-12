@@ -255,8 +255,15 @@ more than 10% of sampled entries return 4xx/5xx, or entries use a non-canonical 
 internal linking from the homepage. A small, well-linked site is fully discoverable
 without a sitemap, and flagging it would be noise.
 
-**Severity inputs.** stage 1 · `site-wide` · criticality `supporting` for a missing
-sitemap, `core` where dead entries point at primary pages.
+**Severity inputs.** stage 1 · `site-wide` · criticality `informational` when no sitemap
+is discoverable at all — a large, fully-linked site with clean bot parity and no dead
+paths is not made *unreachable* by this, only less efficiently discoverable, which is
+exactly the case `references/severity-model.md` reserves `informational` for (its own
+worked example: a stage-1, site-wide, `supporting` finding scores exactly 0.70 —
+`critical` — by construction, before any content is actually shown to be degraded).
+Reserve `supporting` for a *present-but-degraded* sitemap (non-canonical origin forms
+throughout), and `core` where dead entries point at primary pages — those cases mean
+specific known content is actually broken, not merely discovered less efficiently.
 
 ### Check 4 — Redirect and canonical integrity
 
