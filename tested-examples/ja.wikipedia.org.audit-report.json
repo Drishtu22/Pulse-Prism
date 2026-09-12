@@ -1,0 +1,50 @@
+{
+  "site": "ja.wikipedia.org",
+  "audited_at": "2026-09-07T18:06:12Z",
+  "audit_scope": {},
+  "summary": {
+    "total_findings": 0,
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0,
+    "stage_scores": {
+      "reachability": 100,
+      "delivery": 100,
+      "textuality": 100,
+      "extractability": 100,
+      "trust": 100,
+      "engagement": 100
+    },
+    "headline": "No findings detected in the audited sample."
+  },
+  "findings": [],
+  "opportunities": [
+    {
+      "title": "No schema.org JSON-LD exists on sampled ja.wikipedia.org articles, but this is not treated as a comparable defect to sites like eff.org's -- a real, different, and more authoritative machine-readable channel already exists and is explicitly linked from every article",
+      "rationale": "The sampled article (jawiki 'Japan') has zero JSON-LD and no meta description, which would ordinarily be evidence worth flagging. But it links explicitly to its corresponding Wikidata entity (https://www.wikidata.org/wiki/Special:EntityPage/Q17), a structured knowledge base entry maintained independently of the page's own HTML, and Wikipedia/Wikidata are already a foundational data source most AI systems draw on directly rather than by scraping article HTML for JSON-LD. This is the same reasoning this project applied to arxiv.org's Highwire citation tags: a materially different situation from a site with no machine-readable presence anywhere, and treating them identically would be a false positive against a site that is, empirically, among the most-cited sources across AI assistants today despite lacking on-page schema.org markup.",
+      "mechanism": "Not applicable as a fix -- this entry exists to record the reasoning for *not* flagging an absence, so a reader of this report understands why the finding that would appear on a similarly-structured commercial site does not appear here.",
+      "priority": "low",
+      "steps": [],
+      "effort": "trivial",
+      "id": "O-001"
+    }
+  ],
+  "not_assessed": [
+    {
+      "check": "Answerability -- question-coverage, quotable-fact density (answerability-audit)",
+      "reason": "The sampled article's declared language (ja) is non-English; per this skill's own documented exception, the density-threshold classifiers (English-only keyword patterns) do not apply and were not run against Japanese text. A definitional opening sentence is present on direct inspection (standard for Wikipedia's lede-paragraph convention), but no systematic question-coverage derivation was performed in this run.",
+      "impact": "Cannot state a coverage percentage; this is a scope limit of this run, not a claim about the article's actual quality, which reads as substantive on direct inspection."
+    },
+    {
+      "check": "Freshness signals -- last-modified date markup (freshness-corroboration-audit)",
+      "reason": "Not systematically checked in this run. Wikipedia's standard footer convention states a last-modified date in visible text, but this was not confirmed to be present as parseable markup (a <time> element or JSON-LD dateModified) on the sampled page in the time available.",
+      "impact": "Cannot confirm whether the last-modified date is machine-extractable specifically, versus only human-readable."
+    },
+    {
+      "check": "Engagement and rendering-fidelity checks across a broader sample (engagement-audit, render-extractability-audit)",
+      "reason": "This run hand-verified one article page in depth (chosen specifically to exercise non-ASCII URL handling) rather than a stratified sample across article types (disambiguation pages, list articles, stub articles).",
+      "impact": "The one page sampled delivered full, real text with no JavaScript dependency; a broader sample was not attempted."
+    }
+  ]
+}

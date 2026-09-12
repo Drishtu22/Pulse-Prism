@@ -1,0 +1,67 @@
+{
+  "site": "stackoverflow.com",
+  "audited_at": "2026-09-08T19:50:37Z",
+  "audit_scope": {},
+  "summary": {
+    "total_findings": 1,
+    "critical": 1,
+    "high": 0,
+    "medium": 0,
+    "low": 0,
+    "stage_scores": {
+      "reachability": 60,
+      "delivery": 100,
+      "textuality": 100,
+      "extractability": 100,
+      "trust": 100,
+      "engagement": 100
+    },
+    "headline": "robots.txt is served with HTTP 418 ('I'm a teapot'), not 200, despite containing a genuine, maximally restrictive policy -- 'Disallow: /' and 'Content-signal: search=no, ai-train=no' for every agent -- which most major crawlers likely never see enforced, because a non-2xx status on robots.txt is documented crawler behavior for 'file unavailable, crawl without restriction' \u2014 critical severity, Serve robots.txt with HTTP 200, keeping the same directive content."
+  },
+  "findings": [
+    {
+      "title": "robots.txt is served with HTTP 418 ('I'm a teapot'), not 200, despite containing a genuine, maximally restrictive policy -- 'Disallow: /' and 'Content-signal: search=no, ai-train=no' for every agent -- which most major crawlers likely never see enforced, because a non-2xx status on robots.txt is documented crawler behavior for 'file unavailable, crawl without restriction'",
+      "stage": "reachability",
+      "detected_by": "crawl-access-audit",
+      "evidence": "A plain fetch to https://stackoverflow.com/robots.txt returns HTTP 418 (reproduced on two separate attempts) with a real, well-formed body: 'License: https://stackoverflow.com/license.xml', a 'User-agent: *' group, a 'Content-signal: search=no, ai-train=no' line, and 'Disallow: /'. The intent is unambiguous: block everything, and explicitly opt out of AI training use via the newer Content-Signal convention. But per Google's own documented crawler behavior, and the convention most major crawlers follow, an HTTP status in the 4xx range (429 aside) on robots.txt is treated as 'the file is unavailable', which licenses unrestricted crawling rather than the restrictive default RFC 9309 specifies for a 5xx (temporarily-disallow-everything) response. A 418 falls squarely in that 4xx range. This means the site's own maximally restrictive, explicitly-stated policy is likely being silently ignored by every crawler that follows the documented convention -- the opposite failure from every other robots.txt finding in this project's history, where sites were accidentally too permissive. Here the site is trying to be maximally restrictive and very possibly succeeding at enforcing nothing at all.",
+      "severity_inputs": {
+        "stage": 1,
+        "prevalence": "site-wide",
+        "affected_fraction": 1.0,
+        "criticality": "core"
+      },
+      "reproduction": {
+        "urls": [
+          "https://stackoverflow.com/robots.txt"
+        ],
+        "command": "curl -s -o /dev/null -w '%{http_code}' https://stackoverflow.com/robots.txt",
+        "observed": "418, with a real, parseable robots.txt body underneath (verified: this project's own parser extracts a valid '*' group with Disallow: / from it)",
+        "expected": "200, so that the site's stated policy is actually the policy real crawlers observe and act on"
+      },
+      "confidence": "high",
+      "suggested_action": {
+        "summary": "Serve robots.txt with HTTP 200, keeping the same directive content.",
+        "priority": "critical",
+        "mechanism": "Whatever infrastructure or middleware is producing the 418 status for this specific path is very likely an unintended side effect (418 is a joke status code from RFC 2324, not something any real crawler-compliance mechanism should intentionally emit) -- but its practical effect is to make the site's own explicit, carefully-worded AI-training opt-out and blanket disallow non-binding for any crawler that follows documented status-code conventions.",
+        "steps": [
+          "Identify why /robots.txt specifically returns 418 rather than 200 -- likely a routing rule, feature flag, or joke response wired to this exact path.",
+          "Confirm the fix by checking that a plain, unauthenticated fetch to /robots.txt returns 200 with the same body content."
+        ],
+        "verification": "curl -s -o /dev/null -w '%{http_code}' https://stackoverflow.com/robots.txt returns 200.",
+        "effort": "trivial",
+        "owner": "engineering"
+      },
+      "severity_score": 1.0,
+      "severity": "critical",
+      "id": "F-001"
+    }
+  ],
+  "opportunities": [],
+  "not_assessed": [
+    {
+      "check": "Whether a live technical block (beyond the robots.txt status-code issue) also prevents crawling in practice; structured data, answerability, freshness, and engagement on question/answer pages",
+      "reason": "The homepage and a category page both returned a confirmed Cloudflare challenge (HTTP 403, 'cf-mitigated: challenge' header) on every attempt from this run's environment, consistent across a retry spaced 8 seconds apart. Unlike mayoclinic.org's or allrecipes.com's equivalent walls, Stack Overflow/Stack Exchange has a public, well-documented stance against AI-training scraping, making a genuine, deliberate technical block plausible here -- but this audit still cannot distinguish that from this environment's own traffic being flagged, and did not attempt to verify further.",
+      "impact": "Cannot say whether Stack Overflow's QAPage/Question/Answer structured data is complete or well-formed, since no content page was reachable to check. The robots.txt finding stands independently of this, since it is read from a file served without any challenge."
+    }
+  ]
+}

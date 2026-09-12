@@ -1,0 +1,136 @@
+{
+  "site": "spotify.com",
+  "audited_at": "2026-09-06T16:30:36Z",
+  "audit_scope": {},
+  "summary": {
+    "total_findings": 2,
+    "critical": 0,
+    "high": 0,
+    "medium": 2,
+    "low": 0,
+    "stage_scores": {
+      "reachability": 100,
+      "delivery": 90,
+      "textuality": 100,
+      "extractability": 82,
+      "trust": 100,
+      "engagement": 100
+    },
+    "headline": "The bare domain root and every locale-root path (e.g. /, /us/, /gb/, /de/) redirect unconditionally to open.spotify.com's web-player app shell, which delivers almost no server-rendered content -- yet the site's own Organization structured data names this exact URL as the canonical entity URL \u2014 medium severity, Stop redirecting the bare root and locale-root paths straight into the web-player SPA for non-authenticated, non-JS-executing requests; serve the existing marketing homepage content there instead, or add a noscript/prerendered fallback."
+  },
+  "findings": [
+    {
+      "title": "The bare domain root and every locale-root path (e.g. /, /us/, /gb/, /de/) redirect unconditionally to open.spotify.com's web-player app shell, which delivers almost no server-rendered content -- yet the site's own Organization structured data names this exact URL as the canonical entity URL",
+      "stage": "delivery",
+      "detected_by": "render-extractability-audit",
+      "evidence": "A plain, non-JavaScript-executing fetch to https://www.spotify.com/ (and to every locale-root path tried: /us/, /gb/, /de/) returns HTTP 200 but 302s internally to https://open.spotify.com/, whose HTML delivers a title of 'Spotify - Web Player', zero characters of body text beyond that title (20 characters total after stripping tags/scripts), no meta description, no JSON-LD, and no <noscript> fallback of any kind. This is identical for every agent identity tested: GPTBot, ClaudeBot and Googlebot all land on the same 159KB-of-script, 20-characters-of-text shell. By contrast, deeper marketing pages on the same domain (e.g. /us/premium/, /us/about-us/) are properly server-rendered with real visible text and, on the premium page, a JSON-LD Organization block. That Organization block's own 'url' field is 'https://www.spotify.com/' -- the exact URL this finding describes as effectively empty to any non-JS-executing agent. An assistant that discovers Spotify's well-formed Organization schema and follows its own declared canonical URL to learn more receives nothing.",
+      "severity_inputs": {
+        "stage": 2,
+        "prevalence": "isolated",
+        "affected_fraction": 0.05,
+        "criticality": "core"
+      },
+      "reproduction": {
+        "urls": [
+          "https://www.spotify.com/",
+          "https://www.spotify.com/us/"
+        ],
+        "command": "curl -sL -o /dev/null -w '%{url_effective} %{http_code}' -A 'Mozilla/5.0 (compatible; GPTBot/1.1; +https://openai.com/gptbot)' https://www.spotify.com/",
+        "observed": "Redirects to https://open.spotify.com/, 200, body reduces to 20 characters of visible text after stripping markup",
+        "expected": "The domain root should deliver the same kind of server-rendered marketing content already present at /us/premium/ and /us/about-us/, or at minimum a noscript fallback describing the entity, given the site's own structured data treats this URL as canonical"
+      },
+      "confidence": "high",
+      "suggested_action": {
+        "summary": "Stop redirecting the bare root and locale-root paths straight into the web-player SPA for non-authenticated, non-JS-executing requests; serve the existing marketing homepage content there instead, or add a noscript/prerendered fallback.",
+        "priority": "high",
+        "mechanism": "This is the single most-linked, most-likely-to-be-sampled URL on the entire domain, and it is also the exact URL the site's own Organization JSON-LD names as canonical -- any assistant or crawler that resolves 'what is the canonical URL for Spotify' via that schema, or simply starts from the bare domain the way most inbound links and citations do, receives no usable content, while marketing pages one path segment deeper are already handled correctly.",
+        "steps": [
+          "Confirm whether the open.spotify.com redirect is intended only for authenticated/returning-user sessions, and scope it accordingly rather than applying it to every request.",
+          "Serve the existing, properly server-rendered marketing homepage content (comparable to /us/premium/ or /us/about-us/) at the bare root and locale-root paths for unauthenticated or non-session requests.",
+          "If the redirect must stay universal, add a noscript fallback or prerendered snapshot describing the entity, consistent with what the Organization schema already claims lives at this URL."
+        ],
+        "verification": "A plain HTTP fetch to https://www.spotify.com/ returns substantive visible text describing the entity, matching the quality already present on /us/premium/ and /us/about-us/.",
+        "effort": "moderate",
+        "owner": "engineering"
+      },
+      "severity_score": 0.26,
+      "severity": "medium",
+      "id": "F-001"
+    },
+    {
+      "title": "Every sampled Premium subscription plan page carries real, correct visible pricing for a distinct paid tier but zero Product/Offer structured data anywhere",
+      "stage": "extractability",
+      "detected_by": "structured-data-audit",
+      "evidence": "Five sampled pages under /us/premium/ (the plan-overview page and the Individual, Duo, Family and Student sub-pages) each render real visible pricing text -- $12.99, $6.99, $18.99 and $21.99 for the four distinct plans respectively, correctly matching what a human visitor sees -- but contain either zero JSON-LD blocks at all (the four sub-pages) or exactly one JSON-LD block that is a generic Organization node with no Product, Offer or AggregateOffer describing any plan, its price, or its billing period (the overview page). This is a genuinely transactable content pattern -- four named, separately priced subscription products -- with no machine-readable price or offer data behind any of them.",
+      "severity_inputs": {
+        "stage": 4,
+        "prevalence": "widespread",
+        "affected_fraction": 0.8,
+        "criticality": "core"
+      },
+      "reproduction": {
+        "urls": [
+          "https://www.spotify.com/us/premium/",
+          "https://www.spotify.com/us/premium/individual/",
+          "https://www.spotify.com/us/premium/duo/",
+          "https://www.spotify.com/us/premium/family/",
+          "https://www.spotify.com/us/premium/student/"
+        ],
+        "command": "curl -s -A 'Mozilla/5.0' https://www.spotify.com/us/premium/family/ | grep -c 'application/ld+json'",
+        "observed": "0 (and 0 for duo, student and individual; 1 generic Organization block, no Product/Offer, on the overview page)",
+        "expected": "A Product or Offer node per plan, naming its price, currency and billing period, the way basecamp.com's pricing page attempts (if incompletely) to do"
+      },
+      "confidence": "high",
+      "suggested_action": {
+        "summary": "Add Product/Offer JSON-LD to each Premium plan page, naming the plan, its price, currency, billing period and account-count limit -- all already stated correctly in the page's own visible copy.",
+        "priority": "high",
+        "mechanism": "An assistant asked to compare Spotify's subscription tiers has no structured source to quote a price or plan name from and must either fall back to unreliable prose extraction or decline to answer -- despite the correct numbers being right there in the page's own visible text.",
+        "steps": [
+          "Add a Product node per plan (Individual, Duo, Family, Student) with an Offer child stating price, priceCurrency and a billing-period qualifier.",
+          "Verify the stated price matches the page's own visible price exactly, the way this audit checks on other sites' pricing pages."
+        ],
+        "verification": "Each plan page's JSON-LD includes a Product/Offer node whose price matches the page's visible price.",
+        "effort": "moderate",
+        "owner": "engineering"
+      },
+      "severity_score": 0.44,
+      "severity": "medium",
+      "id": "F-002"
+    }
+  ],
+  "opportunities": [
+    {
+      "title": "Publish an llms.txt pointing to the properly server-rendered marketing pages, given the domain root itself is not a reliable entry point for a non-JS agent",
+      "rationale": "No llms.txt exists today (the path returns the site's own soft-404 shell, not a real file). Given this audit's other finding -- that the most obvious entry point, the bare domain root, redirects to an empty app shell -- a short llms.txt naming the working marketing pages (/us/premium/, /us/about-us/, etc.) would give a well-behaved agent a reliable alternative starting point without waiting on the redirect fix.",
+      "mechanism": "An agent that respects llms.txt would have a documented, working path to real content even before the underlying redirect behavior is reconsidered.",
+      "priority": "low",
+      "steps": [
+        "Add a minimal llms.txt at the domain root listing the working marketing entry points."
+      ],
+      "effort": "trivial",
+      "id": "O-001"
+    }
+  ],
+  "not_assessed": [
+    {
+      "check": "Answerability -- question-coverage, definitional clarity, quotable-fact density, question-shaped structure, claim attribution (answerability-audit)",
+      "reason": "This run hand-verified two specific mechanisms (the root-redirect delivery gap and the missing Product/Offer markup) in depth rather than running the full sampled-page probe across the marketing site. The pages inspected in passing (/us/premium/, /us/about-us/) both carry real, plausibly quotable prose, but no systematic question-coverage derivation was performed.",
+      "impact": "Cannot state a coverage percentage or list specific unanswered questions for spotify.com; this is a genuine gap in this run, not a claim that the site fails or passes this check."
+    },
+    {
+      "check": "Freshness and corroboration signals -- dateline markup, self-description, identity anchors (freshness-corroboration-audit)",
+      "reason": "Not performed in this run to stay within the demonstration's time budget.",
+      "impact": "Not assessed. The Organization JSON-LD found on /us/premium/ does carry a real, verifiable address and sameAs links to major platforms (Wikidata, Twitter, Facebook, YouTube, Instagram, TikTok, Snapchat, LinkedIn), which is a positive signal this run did not formally score."
+    },
+    {
+      "check": "On-site engagement -- LCP/CLS/TBT, above-the-fold content, interaction affordances (engagement-audit)",
+      "reason": "No headless-browser engine (Playwright/Puppeteer) was available in this run's environment, and open.spotify.com's web-player shell specifically requires full JS execution to render anything at all, making a plain-fetch-based approximation meaningless here.",
+      "impact": "Cannot assess the actual on-site experience of either the web player or the marketing pages."
+    },
+    {
+      "check": "JS-dependency ratio and viewport occlusion across a full stratified sample of the marketing site (render-extractability-audit, remaining checks)",
+      "reason": "This run hand-verified a small, targeted set of URLs (root, four locale roots, five premium-plan pages, one about-us page) rather than running discover_pages.py's seeded sampling across the full site.",
+      "impact": "The redirect finding is well-corroborated across the URLs actually tried, but a broader sample might surface additional JS-dependent sections of the marketing site beyond the ones checked here."
+    }
+  ]
+}

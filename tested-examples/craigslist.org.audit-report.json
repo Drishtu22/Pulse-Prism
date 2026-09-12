@@ -1,0 +1,78 @@
+{
+  "site": "craigslist.org",
+  "audited_at": "2026-09-07T17:01:00Z",
+  "audit_scope": {},
+  "summary": {
+    "total_findings": 1,
+    "critical": 0,
+    "high": 0,
+    "medium": 1,
+    "low": 0,
+    "stage_scores": {
+      "reachability": 100,
+      "delivery": 100,
+      "textuality": 100,
+      "extractability": 88,
+      "trust": 100,
+      "engagement": 100
+    },
+    "headline": "'Services' category listings state explicit prices in plain visible text but carry no Offer or price markup of any kind, while 'for sale' category listings on the same platform, using the same posting template family, correctly include complete Offer schema with price, currency and location \u2014 medium severity, Extend the Offer/price JSON-LD already implemented for the 'for sale' posting template to the 'services' posting template, populated from the same free-text price a poster already enters."
+  },
+  "findings": [
+    {
+      "title": "'Services' category listings state explicit prices in plain visible text but carry no Offer or price markup of any kind, while 'for sale' category listings on the same platform, using the same posting template family, correctly include complete Offer schema with price, currency and location",
+      "stage": "extractability",
+      "detected_by": "structured-data-audit",
+      "evidence": "Two sampled 'services' category postings both state clear pricing in plain text -- one lists a menu ('$100 for 1 hour, $140 for 1.5 hrs, $180 for 2 hours, $220 for 2.5 hrs'), the other omits a price (a legitimate 'call for quote' case) -- yet both carry exactly one JSON-LD block, a BreadcrumbList, and nothing else: no Offer, no PriceSpecification, no Service node. By contrast, a sampled 'for sale' category posting (PullRite Superlite hitch, $550) carries a second, complete JSON-LD block: an Offer node with price ('550.00'), priceCurrency ('USD'), and a full availableAtOrFrom address and geo-coordinates. The platform clearly has the underlying capability and data model to emit price/offer structured data -- it does so correctly for one listing category and not for another that states prices just as explicitly in its own visible text.",
+      "severity_inputs": {
+        "stage": 4,
+        "prevalence": "partial",
+        "affected_fraction": 0.4,
+        "criticality": "core"
+      },
+      "reproduction": {
+        "urls": [
+          "https://www.craigslist.org/view/d/campbell-male-massage-therapist-office/87cfZtH1VvbX83Ujc6CyB2",
+          "https://www.craigslist.org/view/d/union-city-pullrite-superlite-20k/vTAQw3uPqpL56Yd3xdgs59"
+        ],
+        "command": "curl -s -A 'Mozilla/5.0' 'https://www.craigslist.org/view/d/campbell-male-massage-therapist-office/87cfZtH1VvbX83Ujc6CyB2' | grep -o '\"@type\":\"[A-Za-z]*\"'",
+        "observed": "Only 'ListItem'/'BreadcrumbList' types on the services listing despite a stated price menu in visible text; 'Offer' with a populated price on the for-sale listing",
+        "expected": "An Offer or PriceSpecification node on services listings that state a price, consistent with the markup already correctly implemented for the for-sale category"
+      },
+      "confidence": "high",
+      "suggested_action": {
+        "summary": "Extend the Offer/price JSON-LD already implemented for the 'for sale' posting template to the 'services' posting template, populated from the same free-text price a poster already enters.",
+        "priority": "medium",
+        "mechanism": "An assistant asked to compare local service rates has a reliable, structured source for for-sale item prices on this platform but not for service prices, even when a poster has stated one just as clearly -- an inconsistency between categories that share the same platform and, evidently, the same underlying capability.",
+        "steps": [
+          "Identify which posting categories currently emit Offer/price JSON-LD (confirmed: for-sale) versus which do not (confirmed: services).",
+          "Extend the existing Offer-emission logic to the services template, extracting a price where the poster has stated one in the structured price field or free text."
+        ],
+        "verification": "A sample of priced services listings carry an Offer node whose price matches the amount stated in the listing's own visible text.",
+        "effort": "moderate",
+        "owner": "engineering"
+      },
+      "severity_score": 0.3,
+      "severity": "medium",
+      "id": "F-001"
+    }
+  ],
+  "opportunities": [],
+  "not_assessed": [
+    {
+      "check": "Structured data across the remaining posting categories (jobs, housing, personals, community, gigs, resumes) beyond the two sampled here (services, for-sale)",
+      "reason": "This run hand-verified two category templates in depth rather than sampling across all of Craigslist's roughly eight top-level categories.",
+      "impact": "Cannot say whether the Offer-markup gap found in 'services' extends to other non-transactable-looking categories that may also state prices (e.g. gigs), or whether other categories match the 'for sale' template's correct behavior instead."
+    },
+    {
+      "check": "Answerability, freshness/corroboration, and engagement (answerability-audit, freshness-corroboration-audit, engagement-audit)",
+      "reason": "This run hand-verified one specific mechanism (structured-data consistency across category templates) rather than running the full sampled-page probe.",
+      "impact": "Cannot state whether individual listings' free-text descriptions are quotable, though the one genuinely positive signal observed in passing -- real <time datetime> markup with an accurate, current timestamp on every sampled posting -- suggests freshness signalling is likely handled well and was not a concern worth pursuing further in the time available."
+    },
+    {
+      "check": "On-site engagement -- LCP/CLS/TBT, viewport occlusion (engagement-audit)",
+      "reason": "No headless-browser engine (Playwright/Puppeteer) was available in this run's environment. Note this is also the first site tested where a plain fetch alone was expected to be sufficient for most checks, given the platform's minimal JavaScript footprint -- confirmed live: sampled postings deliver full, real text content to a non-executing fetcher despite a stray 'enable JavaScript' notice appearing in the same response, which does not actually block content extraction.",
+      "impact": "Cannot assess Core Web Vitals, but this is the lowest-risk site tested for a JS-dependency gap specifically."
+    }
+  ]
+}

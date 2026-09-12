@@ -1,0 +1,141 @@
+{
+  "site": "techcrunch.com",
+  "audited_at": "2026-09-05T16:10:33Z",
+  "audit_scope": {
+    "pages_sampled": 15,
+    "sample_seed": 42,
+    "sampled_urls": [
+      "https://techcrunch.com",
+      "https://techcrunch.com/video/startup-pitch-practice-at-tc-sessions-climate-2022/",
+      "https://techcrunch.com/2026/09/03/circular-unveils-ring-3-series-with-contactless-payments-and-on-finger-vibration-alerts/",
+      "https://techcrunch.com/category/apps/",
+      "https://techcrunch.com/author/marina-temkin/",
+      "https://techcrunch.com/press-release/gomining-launches-gobtc-pay-to-bring-native-instant-payments-to-bitcoin/",
+      "https://techcrunch.com/newsletters/startup-battlefield-200/",
+      "https://techcrunch.com/tag/cloud-computing/",
+      "https://techcrunch.com/events/techcrunch-disrupt/?utm_source=google&utm_medium=ad&utm_campaign=disrupt2026&utm_content=addiscount&promo=Disrupt25&display=true",
+      "https://techcrunch.com/events/techcrunch-disrupt/tickets",
+      "https://techcrunch.com/latest/?offset=10",
+      "https://techcrunch.com/newsletters",
+      "https://techcrunch.com/video",
+      "https://techcrunch.com/2026/08/26/3-reasons-founders-cant-miss-disrupt-2026/",
+      "https://techcrunch.com/2026/08/31/a-group-funded-by-andreessen-horowitz-and-brockman-plan-data-center-ads-to-sway-midterms/"
+    ],
+    "robots_respected": true
+  },
+  "summary": {
+    "total_findings": 2,
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 2,
+    "stage_scores": {
+      "reachability": 92,
+      "delivery": 100,
+      "textuality": 100,
+      "extractability": 95,
+      "trust": 100,
+      "engagement": 100
+    },
+    "headline": "robots.txt blocks one OpenAI retrieval agent while leaving a different OpenAI retrieval agent unmentioned -- an inconsistent, not clearly deliberate, policy \u2014 low severity, Confirm whether blocking ChatGPT-User specifically, while leaving OAI-SearchBot and PerplexityBot unblocked, is an intentional distinction -- if not, align the two OpenAI agents to the same rule."
+  },
+  "findings": [
+    {
+      "title": "robots.txt blocks one OpenAI retrieval agent while leaving a different OpenAI retrieval agent unmentioned -- an inconsistent, not clearly deliberate, policy",
+      "stage": "reachability",
+      "detected_by": "crawl-access-audit",
+      "evidence": "robots.txt disallows a broad set of named agents at site-wide scope: GPTBot, ClaudeBot/Claude-Web, CCBot, Google-Extended, anthropic-ai, cohere-ai, Bytespider, Applebot-Extended, Diffbot, FacebookBot, and omgili -- a defensible, symmetric-looking policy against AI training use. Within that same list, 'ChatGPT-User' (OpenAI's live-browsing agent, used when the assistant fetches a page during a user's own conversation -- a retrieval use, not training) is also disallowed. But 'OAI-SearchBot' (OpenAI's other retrieval agent, used for search-style indexing) and 'PerplexityBot'/'Perplexity-User' are not named at all, and fall through to the permissive wildcard group. Blocking one of a company's two retrieval agents while leaving the other permitted does not cleanly fit either 'blocks everything' or 'blocks only training' -- the two most defensible, clearly-intentional postures this audit distinguishes elsewhere.",
+      "severity_inputs": {
+        "stage": 1,
+        "prevalence": "site-wide",
+        "criticality": "informational",
+        "note": "informational: no content degraded, so stage weight is not applied at full strength"
+      },
+      "reproduction": {
+        "urls": [
+          "https://techcrunch.com/robots.txt"
+        ],
+        "command": "curl -s https://techcrunch.com/robots.txt | grep -A1 'ChatGPT-User\\|OAI-SearchBot\\|PerplexityBot'",
+        "observed": "User-agent: ChatGPT-User / Disallow: / present; no User-agent block for OAI-SearchBot or PerplexityBot at all",
+        "expected": "Either both of a given company's retrieval agents permitted, or both disallowed, so the policy's intent is legible from the file itself"
+      },
+      "confidence": "low",
+      "suggested_action": {
+        "summary": "Confirm whether blocking ChatGPT-User specifically, while leaving OAI-SearchBot and PerplexityBot unblocked, is an intentional distinction -- if not, align the two OpenAI agents to the same rule.",
+        "priority": "low",
+        "mechanism": "This is reported at low confidence and informational criticality precisely because the asymmetry could be deliberate (e.g. a specific objection to live browse-and-quote use while accepting search-index inclusion) -- the fix is confirming intent, not assuming a mistake.",
+        "steps": [
+          "Check whether the distinction between ChatGPT-User and OAI-SearchBot was a deliberate policy choice.",
+          "If not, add or remove a Disallow rule so both agents from the same company are treated consistently."
+        ],
+        "verification": "robots.txt's treatment of same-purpose agents from a single company is internally consistent.",
+        "effort": "trivial",
+        "owner": "engineering"
+      },
+      "severity_score": 0.2,
+      "severity": "low",
+      "id": "F-001"
+    },
+    {
+      "title": "Event markup's sponsor list is 76 entries deep and every single entry has a blank name",
+      "stage": "extractability",
+      "detected_by": "structured-data-audit",
+      "evidence": "The ticketed event page (/events/techcrunch-disrupt/, also reachable via /events/techcrunch-disrupt/tickets) carries genuinely excellent core Event markup: name, startDate (2026-10-13), endDate (2026-10-15), eventStatus (EventScheduled), organizer, and a complete location (Place with a full PostalAddress -- 800 Howard St., San Francisco, CA 94103). Within that same Event node, the sponsor array contains 76 entries, and every one of them is a hollow {\"@type\": \"Organization\", \"name\": \"\"} -- no name, no url, no logo, nothing beyond the bare type. This is not a truncated sample: every field on the first two entries was checked directly and each carries only @type and an empty name string.",
+      "severity_inputs": {
+        "stage": 4,
+        "prevalence": "isolated",
+        "affected_fraction": 0.07,
+        "criticality": "supporting"
+      },
+      "reproduction": {
+        "urls": [
+          "https://techcrunch.com/events/techcrunch-disrupt/"
+        ],
+        "command": "curl -sL https://techcrunch.com/events/techcrunch-disrupt/ | grep -o '\"sponsor\":\\[.\\{0,200\\}'",
+        "observed": "sponsor array entries of the form {\"@type\":\"Organization\",\"name\":\"\"}, repeated 76 times",
+        "expected": "Each sponsor entry carries the actual sponsor's name (and ideally url/logo), matching the sponsor logos visibly rendered on the page"
+      },
+      "confidence": "high",
+      "suggested_action": {
+        "summary": "Fix the sponsor-list template so each Organization entry's name field is populated from the same sponsor data already used to render the visible sponsor logos on the page.",
+        "priority": "medium",
+        "mechanism": "Hollow markup is worse than absent markup: a system extracting facts from this Event's schema.org data currently learns that 76 unnamed organizations sponsor this event, which is a real object with no usable content, rather than either the correct sponsor names or no sponsor claim at all. The visible page evidently has the correct sponsor identities (logos render correctly for site visitors), so this is a template-mapping gap between the display data and the structured-data generator, not a missing-content problem.",
+        "steps": [
+          "Locate the sponsor-list JSON-LD generation logic for the event template.",
+          "Map each sponsor's display name (already used for the visible logo alt text or caption) into the corresponding Organization node's name field."
+        ],
+        "verification": "curl -sL https://techcrunch.com/events/techcrunch-disrupt/ | grep -o '\"name\":\"[^\"]*\"' | grep -A1 -B1 Organization -- sponsor entries show real names, not empty strings.",
+        "effort": "trivial",
+        "owner": "engineering"
+      },
+      "severity_score": 0.12,
+      "severity": "low",
+      "id": "F-002"
+    }
+  ],
+  "opportunities": [
+    {
+      "title": "Publish an llms.txt pointing at flagship editorial content and the Disrupt event",
+      "rationale": "No /llms.txt was found. For a high-volume news publisher, a curated entry point distinguishing flagship investigative/feature journalism and major events (like Disrupt) from routine wire-style posts would help a retrieval-capable assistant surface the site's best work rather than whatever it happened to crawl most recently.",
+      "mechanism": "A curated list gives an assistant a citation-worthy starting point distinct from an undifferentiated firehose of daily posts.",
+      "priority": "low",
+      "steps": [
+        "Add an llms.txt at the site root listing flagship series, major events, and any evergreen explainer content."
+      ],
+      "effort": "trivial",
+      "id": "O-001"
+    }
+  ],
+  "not_assessed": [
+    {
+      "check": "Delivery performance and entry obstruction (engagement-audit, checks 3-4)",
+      "reason": "A second measurement pass on this sample showed a marked increase in navigation timeouts across pages that had loaded normally minutes earlier, including plain article pages with no relation to the one confirmed slow ad-tracking URL. Given the volume of requests this single testing session had already made to techcrunch.com by that point (well over a hundred, across reconnaissance and six separate script runs), this pattern is more consistent with the site's own rate-limiting or bot-mitigation responding to sustained test traffic than with a genuine reliability problem a normal visitor or a single well-paced audit would encounter.",
+      "impact": "Engagement and performance findings for this site are not reported in this run rather than risk publishing a defect that is actually an artifact of this session's own repeated testing. A single, freshly-run, properly-paced audit (as a real invocation of this marketplace would be, following the orchestrator's request-budget guardrails) would be needed for a reliable read."
+    },
+    {
+      "check": "Off-site corroboration and entity ambiguity (freshness-corroboration-audit, checks 4-5)",
+      "reason": "Not performed in this run to stay within the demonstration's time budget.",
+      "impact": "Not a meaningful concern for a well-known, distinctively-named publisher, but genuinely not checked."
+    }
+  ]
+}
