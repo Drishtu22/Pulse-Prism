@@ -2,7 +2,7 @@
 name: crawl-access-audit
 description: >
   Determines whether an AI client can obtain a site's pages at all — stage 1 of the
-  Pulse-Prism pipeline. Checks robots.txt for directives targeting AI crawlers,
+  ai-citability-audit pipeline. Checks robots.txt for directives targeting AI crawlers,
   compares responses to AI-crawler user-agents against browser user-agents to expose
   bot-management blocks, and validates sitemap health, redirect chains and canonical
   integrity. Use when auditing why a site is absent from AI assistants, when a site

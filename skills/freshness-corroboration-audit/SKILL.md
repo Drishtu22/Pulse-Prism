@@ -2,7 +2,7 @@
 name: freshness-corroboration-audit
 description: >
   Audits whether an extractable claim is current, internally consistent, corroborated
-  off-site and attached to an unambiguous entity — stage 5 of the Pulse-Prism
+  off-site and attached to an unambiguous entity — stage 5 of the ai-citability-audit
   pipeline. Checks recency signals on volatile facts, contradictions across the site,
   independent agreement elsewhere on the web, and name collisions that cause assistants
   to confuse one entity with another. Use when auditing why an assistant describes a

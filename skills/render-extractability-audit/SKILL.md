@@ -2,7 +2,7 @@
 name: render-extractability-audit
 description: >
   Determines whether a page's facts survive delivery to a non-executing fetcher and
-  exist as machine-readable text — stages 2 and 3 of the Pulse-Prism pipeline.
+  exist as machine-readable text — stages 2 and 3 of the ai-citability-audit pipeline.
   Compares raw HTML against the rendered DOM to measure how much content depends on
   JavaScript, and detects facts locked inside images, canvas, video, scanned PDFs or
   interaction-gated regions. Use when auditing why an AI assistant cannot read a page
