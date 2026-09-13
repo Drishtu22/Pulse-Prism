@@ -2,7 +2,7 @@
 name: answerability-audit
 description: >
   Audits whether a page's prose contains anything an AI assistant could actually lift as
-  an answer — stage 4b of the ai-citability-audit pipeline. Derives the questions a user
+  an answer — stage 4b of the AgentLens pipeline. Derives the questions a user
   would plausibly ask an assistant about this entity from the site's own content, then
   measures whether the site holds a self-contained, attributable, extractable answer to
   each. Also measures quotable-fact density, definitional clarity and question-shaped

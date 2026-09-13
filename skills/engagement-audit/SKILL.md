@@ -2,7 +2,7 @@
 name: engagement-audit
 description: >
   Audits why a visitor arriving from an AI assistant leaves without engaging — stage 6
-  of the ai-citability-audit pipeline. Unlike a generic UX or performance review, this
+  of the AgentLens pipeline. Unlike a generic UX or performance review, this
   models the assistant-referred visitor specifically: someone who lands on a deep page
   rather than the homepage, already holds a fact the assistant told them, and came to
   verify or act on that one thing. Checks answer continuity above the fold, deep-entry

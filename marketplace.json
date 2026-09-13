@@ -1,5 +1,5 @@
 {
-  "name": "ai-citability-audit",
+  "name": "AgentLens",
   "version": "1.0.0",
   "description": "Audits any website for the reasons AI assistants fail to find, read, quote or trust it, and for the reasons AI-referred visitors leave without engaging. Emits a single evidence-backed report of findings and prioritized fixes.",
   "license": "MIT",

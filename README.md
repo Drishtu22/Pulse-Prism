@@ -1,4 +1,4 @@
-# ai-citability-audit
+# AgentLens
 
 An Agent Skill Marketplace that audits any website for the reasons AI assistants fail to
 find, read, quote or trust it — and for the reasons visitors who arrive from an assistant
@@ -114,7 +114,7 @@ guessed at. Absence of evidence is never reported as evidence of absence.
 ## Layout
 
 ```
-ai-citability-audit/
+AgentLens/
 ├── marketplace.json
 ├── README.md
 ├── validate_marketplace.py

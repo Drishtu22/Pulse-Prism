@@ -1,7 +1,7 @@
 ---
 name: structured-data-audit
 description: >
-  Audits machine-readable claims — stage 4a of the ai-citability-audit pipeline. Checks
+  Audits machine-readable claims — stage 4a of the AgentLens pipeline. Checks
   whether schema.org structured data exists for the content patterns a site actually
   exhibits, whether it is valid and complete for its declared type, and critically
   whether it agrees with the page's visible text. Use when auditing why AI assistants

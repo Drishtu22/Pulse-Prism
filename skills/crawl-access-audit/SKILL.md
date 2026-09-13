@@ -2,7 +2,7 @@
 name: crawl-access-audit
 description: >
   Determines whether an AI client can obtain a site's pages at all — stage 1 of the
-  ai-citability-audit pipeline. Checks robots.txt for directives targeting AI crawlers,
+  AgentLens pipeline. Checks robots.txt for directives targeting AI crawlers,
   compares responses to AI-crawler user-agents against browser user-agents to expose
   bot-management blocks, and validates sitemap health, redirect chains and canonical
   integrity. Use when auditing why a site is absent from AI assistants, when a site
@@ -258,7 +258,7 @@ without a sitemap, and flagging it would be noise.
 **Severity inputs.** stage 1 · `site-wide` · criticality `informational` when no sitemap
 is discoverable at all — a large, fully-linked site with clean bot parity and no dead
 paths is not made *unreachable* by this, only less efficiently discoverable, which is
-exactly the case `references/severity-model.md` reserves `informational` for (its own
+exactly the case the orchestrator's `../audit-orchestrator/references/severity-model.md` reserves `informational` for (its own
 worked example: a stage-1, site-wide, `supporting` finding scores exactly 0.70 —
 `critical` — by construction, before any content is actually shown to be degraded).
 Reserve `supporting` for a *present-but-degraded* sitemap (non-canonical origin forms
